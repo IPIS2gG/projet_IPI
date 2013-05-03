@@ -58,11 +58,11 @@ void reading(int sock)
 	}
 }
 
-void writing(int sock, char* buff)
+void writing(int sock, char* buff, int nb_car)
 {
 	buff+=2;
 	printf("   Sending to client '%s' ...\n", buff);
-	if(write(sock, buff, BUF_LEN-2)!=BUF_LEN-2)
+	if(write(sock, buff, nb_car)!=nb_car)
 	{
 		print("   Erreur durant l'envoi des données ...\n");
 	}
@@ -151,7 +151,7 @@ int main(int argc, char** argv)
 			{
 				case 'q' : //fermeture du programme
 					cont=0;
-					close_prgm=0;
+					close_prgm=1;
 					break;
 				case 'c' : //fermeture du programme
 					cont=0;
@@ -163,7 +163,7 @@ int main(int argc, char** argv)
 					reading(sock_stream); //reception de données
 					break;
 				case 'w' :
-					writing(sock_stream, buff); //envoi du message suivant 'w '
+					writing(sock_stream, buff, strlen(buff)); //envoi du message suivant 'w '
 					break;
 				default :
 					print("commande incorrecte :"); //Affichage du man si erreur

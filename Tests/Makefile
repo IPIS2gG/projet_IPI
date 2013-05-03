@@ -1,3 +1,5 @@
+all: client serveur
+
 client: clientgen.c
 	gcc -Wall -o clientgen $<
 
