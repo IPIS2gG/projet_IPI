@@ -17,57 +17,6 @@
 #define msg_err strerror(errno)
 #define BUF_LEN 100
 
-//// RESEAU
-void print(char *s)
-{	printf("%s", s); fflush(stdout); }
-
-void flush()
-{ int c;
-  while ((c = getchar ()) != '\n' && c != EOF);}
-  
-void aff_info(struct sockaddr_in* cible)
-{
-	printf("[%s::%d]",
-		inet_ntoa((struct in_addr) cible->sin_addr),
-		ntohs(cible->sin_port)
-		);
-	fflush(stdout);
-}
-
-
-void reading(int sock)
-{
-	char buff[BUF_LEN];
-	int r;
-	print("   Waiting for incomming data ...\n");
-	r=read(sock, buff, BUF_LEN);
-	if(r<=0)
-	{
-		printf("   Erreur (client déconnecté ?) : %s\n", msg_err);
-	}
-	else
-	{
-		buff[r]='\0';
-		printf("   Recu  : '%s'\n", buff);
-		fflush(stdout);
-	}
-}
-
-void writing(int sock, char* buff)
-{
-	buff+=2;
-	printf("   Sending to client '%s' ...\n", buff);
-	if(write(sock, buff, BUF_LEN-2)!=BUF_LEN-2)
-	{
-		print("   Erreur durant l'envoi des données ...\n");
-	}
-	else
-	{
-		print("   Données envoyées !\n");
-	}
-}
-
-
 //// CRYPTAGE
 
 // sha256 prend un mot et un buffer, et remplie le sha256 associé au mot dans le buffer.
@@ -88,11 +37,6 @@ void sha256(char* mot, char tampon[64]){
 
 //// BASE DE DONNEES
 
-// exit_nicely quitte proprement le programme (on se déconnecte de la base de données)
-static void exit_nicely(PGconn *conn){
-	PQfinish(conn); exit(1);
-}
-
 // initDb crée la table users et insère le tuple admin.
 void initDb(PGconn* conn){
 	PGresult   *res;
@@ -105,33 +49,38 @@ void initDb(PGconn* conn){
 }
 
 // Vérifie que les identifiants sont corrects
-void checkAuth(PGconn* conn, char name[32], char pass[32]){
+char checkAuth(PGconn* conn, char name[32], char pass[32]){
 	char* paramValues[1];
 	paramValues[0]=name;
+
 	PGresult *res;
 	res=PQexecParams(conn,"SELECT hash,type FROM users WHERE name=$1",
 		1,NULL,paramValues,NULL,NULL,1);
 	if(PQresultStatus(res) != PGRES_TUPLES_OK){
-		fprintf(stderr,"fail %s",PQerrorMessage(conn));
+		// Requête invalide
+		fprintf(stderr,"%s",PQerrorMessage(conn));
 		PQclear(res); exit_nicely(conn);
 	}
 	if(PQntuples(res)==1){
+		// User inexistant
 		char hashTry[65];
 		sha256(pass,hashTry);
 
 		if(!strcmp(hashTry,PQgetvalue(res,0,0))){
-			printf("%s\n",PQgetvalue(res,0,1));
+			// Identifiants corrects. Renvoie A ou J (admin ou joueur)
+			return PQgetvalue(res,0,1)[0];
 		}else{
-			printf("ko\n");
+			// Mauvais mot de passe
+			return '0';
 		}
 	}else{
-		printf("Cet utilisateur n'existe pas.");
+		return '0';
 	}
 	PQclear(res);
 }
 
 
-void createUser(PGconn* conn, char name[32], char pass[32]){
+char createUser(PGconn* conn, char name[32], char pass[32]){
 	char* paramValues[2];
 	paramValues[0]=name;
 	char tampon[64];
@@ -141,12 +90,75 @@ void createUser(PGconn* conn, char name[32], char pass[32]){
 
 	if(PQresultStatus(PQexecParams(conn,"INSERT INTO users VALUES ($1,$2,'J')",
 		2,NULL,paramValues,NULL,NULL,1)) != PGRES_COMMAND_OK){
-		fprintf(stderr,"failoubet %s",PQerrorMessage(conn));
-
+		fprintf(stderr,"%s",PQerrorMessage(conn));
+		return '0';
 	}
-
+	return '1';
 }
 
+
+//// RESEAU
+void print(char *s){ printf("%s", s); fflush(stdout); }
+
+void flush(){ int c; while ((c = getchar ()) != '\n' && c != EOF); }
+  
+void aff_info(struct sockaddr_in* cible){
+	printf("[%s:%d]",
+		inet_ntoa((struct in_addr) cible->sin_addr),
+		ntohs(cible->sin_port)
+		);
+	fflush(stdout);
+}
+
+void reading(PGconn* conn, int sock){
+	char buff[BUF_LEN];
+	int r;
+	print("Attente de données...\n");
+	r=read(sock, buff, BUF_LEN);
+	if(r<=0){
+		printf("Erreur (client déconnecté ?) : %s\n", msg_err);
+	}
+	else{
+		buff[r]='\0';
+		printf("Recu: '%s'\n", buff);
+		if(buff[0]=='C'){
+			char protocole[2];
+			char id[2];
+			char name[32];
+			char pass[32];
+			if(sscanf(buff,"%s %s %s %s", protocole, id, name, pass)==-1){
+				fprintf(stderr,"fail: scanf1");	exit(1);
+			}
+
+			buff[0]='c';
+			buff[5]=checkAuth(conn,name,pass);
+			buff[6]='\0';
+			printf("Envoi: '%s'\n", buff);
+			if(write(sock, buff, BUF_LEN)!=BUF_LEN){
+				print("Erreur (envoi des données)\n");
+			}
+
+			fflush(stdout);
+		}else if(buff[0]=='A'){
+			char protocole[2];
+			char name[32];
+			char pass[32];
+			if(sscanf(buff,"%s %s %s", protocole, name, pass)==-1){
+				fprintf(stderr,"fail: scanf1");	exit(1);
+			}
+
+			buff[0]='a';
+			buff[3+strlen(name)]=createUser(conn,name,pass);
+			buff[4+strlen(name)]='\0';
+			printf("Envoi: '%s'\n", buff);
+			if(write(sock, buff, BUF_LEN)!=BUF_LEN){
+				print("Erreur (envoi des données)\n");
+			}
+
+			fflush(stdout);
+		}
+	}
+}
 
 //// FONCTION PRINCIPALE
 int main(int argc, char const *argv[]){
@@ -181,134 +193,55 @@ int main(int argc, char const *argv[]){
 	
 	short cont;
 	short close_prgm;
-	char buff[BUF_LEN];
 	
 	mes_infos.sin_family=AF_INET;
 	mes_infos.sin_addr.s_addr=INADDR_ANY;
-	print("Serveur générique v1.0\n\n");
 	
-	//demande d'un port de connexion
-	print("Port d'écoute -> ");
+	// Port d'écoute ?
+	print("Port d'écoute: ");
 	scanf("%6ud", &mon_port);
 	flush();
 	mes_infos.sin_port=htons(mon_port);
 	
-	print("Initialisation et ouverture du port ...\n");
-	//création du socket
+	// Création du socket
 	sock=socket(AF_INET, SOCK_STREAM, 0);
 	if(sock==-1){
-		fprintf(stderr,"Erreur -> socket : %s\n", msg_err);
-		exit(-1);
+		fprintf(stderr,"Erreur socket : %s\n", msg_err); exit(-1);
 	}
 	
-	//connection du socket
-	if(bind(sock, (struct sockaddr*) &mes_infos, sizeof(mes_infos))<0)
-	{
-		fprintf(stderr,"Erreur -> bind : %s\n", msg_err);
-		exit(-1);
+	// Connexion du socket
+	if(bind(sock, (struct sockaddr*) &mes_infos, sizeof(mes_infos))<0){
+		fprintf(stderr,"Erreur bind : %s\n", msg_err); exit(-1);
 	}
 	
-	if(listen(sock, 1)!=0)
-	{
-		fprintf(stderr,"Erreur -> listen : %s\n", msg_err);
-		exit(-1);
+	if(listen(sock, 1)!=0){
+		fprintf(stderr,"Erreur listen : %s\n", msg_err); exit(-1);
 	}
 	
-	print("Serveur prêt à écouter !\n\n#################\n\n");
-	print("\n#################\n\n");
-	
+
 	close_prgm=0;
 	while(close_prgm==0)
 	{
-		//affichage de mmon port d'attente
-		printf("Attente de connexion sur le port %d ...\n",
-				ntohs(mes_infos.sin_port));
+		printf("En attente de la connexion de COMSERV sur le port %d...\n",
+			ntohs(mes_infos.sin_port));
 		sock_stream=accept(sock, (struct sockaddr*) &client, &sizeof_client);
-		if(sock_stream<0)
-		{
-			fprintf(stderr,"Erreur -> accept : %s\n", msg_err);
-			exit(-1);
+		if(sock_stream<0){
+			fprintf(stderr,"Erreur -> accept : %s\n", msg_err); exit(-1);
 		}
 		
-		print("Connexion acceptée ");
-		aff_info(&client);
-		print(" !\n");
+		print("COMSERV connecté ");aff_info(&client);print("\n");
 		
 		cont=1;
-		while(cont!=0) //boucle d'interaction pour cette connexion
+		while(cont!=0)
 		{
-			print("action -> ");
-			fgets(buff, BUF_LEN-1, stdin); //récupération de la commande
-			buff[strlen(buff)-1]='\0';
-			//flush();
-			switch(buff[0])
-			{
-				case 'q' : //fermeture du programme
-					cont=0;
-					close_prgm=0;
-					break;
-				case 'c' : //fermeture du programme
-					cont=0;
-					break;
-				case 'r' :
-					reading(sock_stream); //reception de données
-					break;
-				case 'w' :
-					writing(sock_stream, buff); //envoi du message suivant 'w '
-					break;
-				default :
-					print("commande incorrecte");
-					break;
-			}
+			reading(conn, sock_stream);
+			sleep(0.1);
 		}
 		print("Deconnexion.");
 		close(sock_stream);
 	}
 	print("Arret.");
 
-
-/*
-	// Réception d'un nom d'utilisateur et de son mot de passe
-	char choix='E';
-	char name[32];
-	char pass[32];
-
-	while(1){
-		printf("Choix ? ");
-		if(scanf("%c",&choix) ==-1){
-			fprintf(stderr,"fail: scanf choix");	exit(1);
-		}
-		while(getchar()!='\n');
-
-		if(choix=='A'){
-			printf("Pseudo ? ");
-			if(scanf("%s", name)==-1){
-				fprintf(stderr,"fail: scanf1");	exit(1);
-			}while(getchar()!='\n');
-			printf("Mot de passe ? ");
-			if(scanf("%s", pass)==-1){
-				fprintf(stderr,"fail: scanf2"); exit(1);
-			}while(getchar()!='\n');
-
-			createUser(conn,name,pass);
-		}else if(choix=='C'){
-			printf("Pseudo ? ");
-			if(scanf("%s", name)==-1){
-				fprintf(stderr,"fail: scanf1");	exit(1);
-			}while(getchar()!='\n');
-			printf("Mot de passe ? ");
-			if(scanf("%s", pass)==-1){
-				fprintf(stderr,"fail: scanf2"); exit(1);
-			}while(getchar()!='\n');
-
-			checkAuth(conn,name,pass);
-		}else{
-			printf("Choix incorrect (%c). Entrez: A\n",choix);
-		}
-
-		choix='E';
-	}
-*/
 	PQfinish(conn);
 	return 0;
 }
