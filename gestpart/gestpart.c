@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-//#include <protoserv.h>
+#include <protoserv.h>
 
 // pour mes tests
 // gcc -Wall -o gestpart gestpart.c 
@@ -11,8 +11,9 @@ struct partie {
   int nbjoueurs; 
   int l; // largeur 
   int h; // hauteur
-  char map[100]; // de taille l*h +1
-  int score[100]; // a preciser, de taille nbjoueurs car une variable pour compter le nombre de combinaisons dans score[0]
+  char **map;
+  //char map[100]; // de taille l*h +1
+  int score[10]; // a preciser, de taille nbjoueurs car une variable pour compter le nombre de combinaisons dans score[0]
 };
 
 
@@ -22,7 +23,8 @@ partie *init(int l, int h, int nbjoueurs)
   // verifier l, h et nbjoueurs
   int i, n;
   partie *p = malloc(sizeof(struct partie));
-  n = l * h;
+  char ** map = malloc(largueur * sizeof(int*));
+  //n = l * h;
   for (i=0 ; i < n ; i++)
     {
       p->map[i] = 'O';
