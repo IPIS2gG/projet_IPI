@@ -15,15 +15,7 @@
 #include <set>
 
 #include "function.h"
-
-struct param_partie
-{
-	int w;
-	int h;
-	int nb_max;
-	std::vector<int> tab_stream;
-	std::vector<char*> tab_pseudo;
-};
+#include "com_ingame.h"
 
 struct param_thread_client //structure de paramètre pour un thread gérant une connexion client
 {
@@ -108,7 +100,8 @@ int main(int argc, char** argv)
 	struct param_thread_accept_connect* param_accept;
 
 	struct param_partie info_partie; //informations pour débuter la partie
-	std::vector<char*>::iterator it_pseudo;
+	std::set<int>::iterator it_stream;
+	std::map<int, pthread_t>::iterator it_thread;
 
 	
 	short cont;
@@ -257,16 +250,27 @@ int main(int argc, char** argv)
 	
 	print("Thread principal : attente du début de la partie ....\n");
 	pause();
-	print("\n\n DEBUT DE LA PARTIE\n\n");
-	printf("map : %d x %d\n", info_partie.w, info_partie.h);
-	for(it_pseudo=info_partie.tab_pseudo.begin();
-					it_pseudo!=info_partie.tab_pseudo.end(); ++it_pseudo)
+	print("Thread printicpal reprend la main\n");
+	print("Fermeture des connection ouvertes inutiles\n");
+	for(it_stream=tab_stream.begin(); it_stream!=tab_stream.end(); ++it_stream)
 	{
-		printf("%s\n", *it_pseudo);
-		free(*it_pseudo);
+		printf("   fermeture socket %d\n", *it_stream);
+		close(*it_stream);
 	}
-	
+	print("Destruction des threads\n");
+	for(it_thread=tab_thread.begin(); it_thread!=tab_thread.end(); ++it_thread)
+	{
+		printf("   fermeture thread d'ID %d ...\n", it_thread->first);
+		pthread_cancel(it_thread->second);
+	}
+	print("   fermeture thread écoute clients\n");
+	pthread_cancel(thread_accept);
+	print("   fermeture thread écoute de authserv\n");
+	pthread_cancel(thread_auth);
+	print("   destruction mutex\n");
 	pthread_mutex_destroy(&lock_connect);
+	
+	launch_game(&info_partie); //lancement du jeu avec les infos
 	return EXIT_SUCCESS;
 }
 
@@ -302,7 +306,7 @@ void* thread_accept_connection(void* param)
 	{
 		print("Attente de connexion ...\n");
 		sock_client_stream=accept(sock_client, (struct sockaddr*) &client, &sizeof_client);
-		print("Connexion détectée\n");
+		printf("Connexion détectée => stream[%d]\n", sock_client_stream);fflush(stdout);
 		if(sock_client_stream<0)
 		{
 			fprintf(stderr,"La connexion a échoué : %s\n", msg_err);
@@ -675,6 +679,9 @@ void* thread_connection_client(void * param)
 			print("   ");
 			aff_thread_info(id, &client);
 			print(" -> partie complète : envoi refus admin\n");
+			print("   ");
+			aff_thread_info(id, &client);
+			print(" fin de connexion\n");
 			write(sock_client_stream, "J 0", 4);
 			close(sock_client_stream);
 			tab_thread->erase(id);
