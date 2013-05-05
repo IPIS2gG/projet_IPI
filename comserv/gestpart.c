@@ -381,8 +381,8 @@ char ** getmap(partie *p){
 }
 
 // ###################################################################################
-int * getscore(partie *p){
-  return p->score;
+int getscore(partie *p, int joueur){
+  return p->score[joueur-1];
 }
 
 
