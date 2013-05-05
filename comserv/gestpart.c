@@ -372,6 +372,11 @@ int play(partie *p, int x, int y, int joueur)
 
 // ####################################################################################
 void destroy(partie *p){
+  for (i=0 ; i < p->l ; i++){
+    free(p->map[i]);
+  }
+  free(p->map);
+  free(p->score);
   free(p); 
 }
 
