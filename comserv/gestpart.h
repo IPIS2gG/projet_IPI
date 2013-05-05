@@ -1,4 +1,4 @@
-typedef struct partie * partie;
+typedef struct partie partie;
 
 partie * init(int, int, int);
 
@@ -8,4 +8,4 @@ void destroy(partie *);
 
 char * getmap(partie *);
 
-int * getscore(partie *);
+int getscore(partie *, int);
