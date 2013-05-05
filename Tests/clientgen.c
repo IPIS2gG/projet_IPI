@@ -43,6 +43,7 @@ void reading(int sock)
 {
 	char buff[BUF_LEN];
 	int r;
+
 	print("   Waiting for incomming data ...\n");
 	r=read(sock, buff, BUF_LEN);
 	if(r<=0)
@@ -51,17 +52,30 @@ void reading(int sock)
 	}
 	else
 	{
-		buff[r]='\0';
-		printf("   Recu  : '%s'\n", buff);
+		printf("   Recu  : -->");
+		fflush(stdout);
+		write(1, buff, r);
+		printf("<-- (%d caractères)\n", r);fflush(stdout);
+		if(buff[r-1]=='\0')
+		{
+			printf("   \'\\0\' à la fin OK\n");fflush(stdout);
+		}
+		else
+		{
+			printf("   char final : %d\n",(unsigned char) buff[r-1]);fflush(stdout);
+		}
 		fflush(stdout);
 	}
-}
+} 
 
 void writing(int sock, char* buff)
 {
 	buff+=2;
-	printf("   Sending to serveur '%s' ...\n", buff);
-	if(write(sock, buff, BUF_LEN-2)!=BUF_LEN-2)
+	int n = strlen(buff)+1;
+	printf("   Sending to client -->");fflush(stdout);
+	write(1, buff, n);fflush(stdout);
+	printf("<--\n"); fflush(stdout);
+	if(write(sock, buff, n)!=n)
 	{
 		print("   Erreur durant l'envoi des données ...\n");
 	}

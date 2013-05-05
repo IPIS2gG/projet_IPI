@@ -44,25 +44,39 @@ void reading(int sock)
 {
 	char buff[BUF_LEN];
 	int r;
+
 	print("   Waiting for incomming data ...\n");
 	r=read(sock, buff, BUF_LEN);
 	if(r<=0)
 	{
-		printf("   Erreur (client déconnecté ?) : %s\n", msg_err);
+		printf("   Erreur (serveur déconnecté ?) : %s\n", msg_err);
 	}
 	else
 	{
-		buff[r]='\0';
-		printf("   Recu  : '%s'\n", buff);
+		printf("   Recu  : -->");
+		fflush(stdout);
+		write(1, buff, r);
+		printf("<-- (%d caractères)\n", r);fflush(stdout);
+		if(buff[r-1]=='\0')
+		{
+			printf("   \'\\0\' à la fin OK\n");fflush(stdout);
+		}
+		else
+		{
+			printf("   char final : %d\n",(unsigned char) buff[r-1]);fflush(stdout);
+		}
 		fflush(stdout);
 	}
 }
 
-void writing(int sock, char* buff, int nb_car)
+void writing(int sock, char* buff)
 {
 	buff+=2;
-	printf("   Sending to client '%s' ...\n", buff);
-	if(write(sock, buff, nb_car)!=nb_car)
+	int n = strlen(buff)+1;
+	printf("   Sending to client -->");fflush(stdout);
+	write(1, buff, n);fflush(stdout);
+	printf("<--\n"); fflush(stdout);
+	if(write(sock, buff, n)!=n)
 	{
 		print("   Erreur durant l'envoi des données ...\n");
 	}
@@ -89,6 +103,7 @@ int main(int argc, char** argv)
 	
 	mes_infos.sin_family=AF_INET;
 	mes_infos.sin_addr.s_addr=INADDR_ANY;
+	
 	print("Serveur générique v1.0\n\n");
 	
 	//demande d'un port de connexion
@@ -146,7 +161,6 @@ int main(int argc, char** argv)
 			print("action -> ");
 			fgets(buff, BUF_LEN-1, stdin); //récupération de la commande
 			buff[strlen(buff)-1]='\0';
-			//flush();
 			switch(buff[0])
 			{
 				case 'q' : //fermeture du programme
@@ -163,7 +177,7 @@ int main(int argc, char** argv)
 					reading(sock_stream); //reception de données
 					break;
 				case 'w' :
-					writing(sock_stream, buff, strlen(buff)); //envoi du message suivant 'w '
+					writing(sock_stream, buff); //envoi du message suivant 'w '
 					break;
 				default :
 					print("commande incorrecte :"); //Affichage du man si erreur
