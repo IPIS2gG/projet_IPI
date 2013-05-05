@@ -12,8 +12,7 @@ struct partie {
   int l; // largeur 
   int h; // hauteur
   char **map;
-  //char map[100]; // de taille l*h +1
-  int score[10]; // a preciser, de taille nbjoueurs car une variable pour compter le nombre de combinaisons dans score[0]
+  int *score; //
 };
 
 
@@ -21,19 +20,27 @@ struct partie {
 partie *init(int l, int h, int nbjoueurs)
 {
   // verifier l, h et nbjoueurs
-  int i, n;
+  int i, j;
   partie *p = malloc(sizeof(struct partie));
-  char ** map = malloc(largueur * sizeof(int*));
-  //n = l * h;
-  for (i=0 ; i < n ; i++)
+  char ** map = malloc(l * sizeof(char*));
+  int * score = malloc(nbjoueurs * sizeof(int));
+
+  for (i=0 ; i < l ; i++)
     {
-      p->map[i] = 'O';
+      map[i] = malloc(h*sizeof(char));
     }
-  p->map[n] = '\0';
-  for (i=0 ; i < nbjoueurs + 1 ; i++)
+  for (i=0 ; i < l ; i++)
     {
-      p->score[i] = 0;
+      for (j=0 ; j < h ; j++){
+	map[i][j] = 'O';
+      }
     }
+  for (i=0 ; i < nbjoueurs ; i++)
+    {
+      score[i] = 0;
+    }
+  p->map = map;
+  p->score = score;
   p->nbjoueurs = nbjoueurs;
   p->l = l;
   p->h = h;
@@ -47,13 +54,11 @@ partie *init(int l, int h, int nbjoueurs)
 // 1 sinon
 int alignement5(partie *p, int x, int y, int joueur)
 {
-  int largeur, hauteur, n, position;
+  int largeur, hauteur;
   int i, j;
   largeur = p->l;
   hauteur = p->h;
-  n = largeur * hauteur;
-  position = largeur * (y-1) + (x - 1);
-  char *map = p->map;
+  char **map = p->map;//
   int ret;
   char s[1];
   ret = sprintf(s, "%d", joueur);
@@ -71,9 +76,9 @@ int alignement5(partie *p, int x, int y, int joueur)
       for (j=i ; j<i+5 ; j++)
 	{
 	  // rester sur la meme ligne ??
-	  if ((position + j <= (largeur * (y-1) + largeur -1)) && (position + j > largeur * (y-1) -1 ))
+	  if ((x-1+j >=0) && (x-1+j < largeur ))
 	    {
-	      if ((map[position] == 'X') && (map[position + j] == map[position]))
+	      if ((map[x-1][y-1] == 'X') && (map[x-1+j][y-1] == map[x-1][y-1]))
 		{
 		  compteur++;
 		}
@@ -84,8 +89,8 @@ int alignement5(partie *p, int x, int y, int joueur)
 	  // mise a jour de la map
 	  for (j=i ; j<i+5 ; j++)
 	    {
-	      map[position] = *s;
-	      map[position+j] = *s;
+	      map[x-1][y-1] = *s;
+	      map[x-1+j][y-1] = *s;
 	    }
 	  return 0; 
 	}
@@ -100,9 +105,9 @@ int alignement5(partie *p, int x, int y, int joueur)
       compteur = 0;
       for (j=i ; j < i+5 ; j++)
 	{
-	  if (((position + j * largeur) >= 0) && (position + j * largeur < n))
+	  if ((y-1+j >= 0) && (y-1+j < hauteur))
 	    {
-	      if ((map[position] == 'X') && (map[position + j * largeur] == map[position]))
+	      if ((map[x-1][y-1] == 'X') && (map[x-1][y-1+j] == map[x-1][y-1]))
 		{
 		  compteur++;
 		}
@@ -113,10 +118,10 @@ int alignement5(partie *p, int x, int y, int joueur)
 	  // mise a jour de la map
 	  for (j=i ; j < i+5 ; j++)
 	    {
-	      map[position] = *s;
-	      map[position + j * largeur] = *s;
+	      map[x-1][y-1] = *s;
+	      map[x-1][y-1+j] = *s;
 	    }
-	  return 0;// on retourne 0;
+	  return 0;
 	}
     }
 
@@ -131,18 +136,18 @@ int alignement5(partie *p, int x, int y, int joueur)
       for (j = i ; j < i+5 ; j++)
 	{
 	  // alignement sur une diagonale ?
-	  if (((position + j * (largeur + 1)) >= 0) && ((position + j * (largeur +1)) < n))
+	  if ((x-1+j >= 0) && (x-1+j < largeur) && (y-1+j >=0) && (y-1+j < hauteur))
 	    {
-	      if ((map[position] == 'X') && (map[position + j * (largeur + 1)] == map[position]))
+	      if ((map[x-1][y-1] == 'X') && (map[x-1+j][y-1+j] == map[x-1][y-1]))
 		{
 		  compteur1++;
 		}
 	    }
 	  
 	  // alignement sur une antidiagonale ?
-	  if (((position + j * (largeur - 1)) >= 0) && ((position + j * (largeur -1)) < n))
+	  if ((x-1-j >= 0) && (x-1-j < largeur ) && (y-1+j >= 0) && (y-1+j < hauteur))
 	    {
-	      if ((map[position] == 'X') && (map[position + j * (largeur - 1)] == map[position]))
+	      if ((map[x-1][y-1] == 'X') && (map[x-1-j][y-1+j] == map[x-1][y-1]))
 		{
 		  compteur2 += 1;
 		}
@@ -153,8 +158,8 @@ int alignement5(partie *p, int x, int y, int joueur)
       if (compteur1 == 5){
 	for (j = i ; j < i+5 ; j++)
 	  {
-	    map[position] = *s;
-	    map[position + j * (largeur + 1)] = *s;
+	    map[x-1][y-1] = *s;
+	    map[x-1+j][y-1+j] = *s;
 	  }
 	return 0;
       }
@@ -162,8 +167,8 @@ int alignement5(partie *p, int x, int y, int joueur)
       if (compteur2 == 5){
 	for (j = i ; j < i+5 ; j++)
 	  {
-	    map[position] = *s;
-	    map[position + j * (largeur - 1)] = *s;
+	    map[x-1][y-1] = *s;
+	    map[x-1-j][y-1+j] = *s;
 	  }
 	return 0;
       }
@@ -181,14 +186,13 @@ int alignement5(partie *p, int x, int y, int joueur)
 // retourne 0 si alignement de 5 possible
 // 1 sinon
 int alignement5possible(partie *p, int x, int y){
-  int largeur, hauteur, n, position;
+  int largeur, hauteur;
   int i, j;
-  char *map;
+  char **map;
   largeur = p->l;
   hauteur = p->h;
-  n = largeur * hauteur;
-  position = largeur * (y-1) + (x - 1);
   map = p->map;
+
  
   /* alignement possible sur une ligne ? */
   for (i=-4 ; i<1 ; i++)
@@ -198,9 +202,9 @@ int alignement5possible(partie *p, int x, int y){
       for (j=i ; j<i+5 ; j++)
 	{
 	  // rester sur la meme ligne 
-	  if ((position + j <= (largeur * (y-1) + largeur -1)) && (position + j > largeur * (y-1) -1 ))
+	  if ((x-1+j >=0) && (x-1+j < largeur ))
 	    {
-	      if (((map[position] == 'X') || (map[position] == 'O')) && ((map[position + j] == 'X') || (map[position + j] == 'O')))
+	      if (((map[x-1][y-1] == 'X') || (map[x-1][y-1] == 'O')) && ((map[x-1+j][y-1] == 'X') || (map[x-1+j][y-1] == 'O')))
 		{
 		  compteur++;
 		}
@@ -220,9 +224,9 @@ int alignement5possible(partie *p, int x, int y){
       compteur = 0;
       for (j=i ; j < i+5 ; j++)
 	{
-	  if (((position + j * largeur) >= 0) && (position + j * largeur < n))
+	  if ((y-1+j >= 0) && (y-1+j < hauteur))
 	    {
-	      if (((map[position] == 'X') || (map[position] == 'O')) && ((map[position + j * largeur] == 'X') || (map[position + j * largeur] == 'O')))
+	      if (((map[x-1][y-1] == 'X') || (map[x-1][y-1] == 'O')) && ((map[x-1][y-1+j] == 'X') || (map[x-1][y-1+j] == 'O')))
 		{
 		  compteur++;
 		}
@@ -245,9 +249,9 @@ int alignement5possible(partie *p, int x, int y){
       for (j = i ; j < i+5 ; j++)
 	{
 	  // alignement possible sur une diagonale 
-	  if (((position + j * (largeur + 1)) >= 0) && ((position + j * (largeur +1)) < n))
+	  if ((x-1+j >= 0) && (x-1+j < largeur) && (y-1+j >=0) && (y-1+j < hauteur))
 	    {
-	      if (((map[position] == 'X') || (map[position] == 'O')) && ((map[position + j * (largeur + 1)] == 'X') || (map[position + j * (largeur + 1)] == 'O')))
+	      if (((map[x-1][y-1] == 'X') || (map[x-1][y-1] == 'O')) && ((map[x-1+j][y-1+j] == 'X') || (map[x-1+j][y-1+j] == 'O')))
 		{
 		  compteur1++;
 		}
@@ -255,9 +259,9 @@ int alignement5possible(partie *p, int x, int y){
 
 	  
 	  // alignement possible sur une antidiagonale 
-	  if (((position + j * (largeur - 1)) >= 0) && ((position + j * (largeur -1)) < n))
+	  if ((x-1-j >= 0) && (x-1-j < largeur ) && (y-1+j >= 0) && (y-1+j < hauteur))
 	    {
-	      if (((map[position] == 'X') || (map[position] == 'O')) && ((map[position + j * (largeur - 1)] == 'X') || (map[position + j * (largeur - 1)] == 'O')))
+	      if (((map[x-1][y-1] == 'X') || (map[x-1][y-1] == 'O')) && ((map[x-1-j][y-1+j] == 'X') || (map[x-1-j][y-1+j] == 'O')))
 		{
 		  compteur2 += 1;
 		}
@@ -317,12 +321,11 @@ int is_fin_de_partie(partie *p){
 
 int play(partie *p, int x, int y, int joueur)
 {
-  int largeur, hauteur, nbjoueurs, position;
+  int largeur, hauteur, nbjoueurs;
   largeur = p->l;
   hauteur = p->h;
   nbjoueurs = p->nbjoueurs;
-  position = (y-1) * largeur + x - 1;
-
+  
   // coordonnees non valides
   if ((x<1) || (x>largeur) || (y<1) || (y>hauteur) )
     {
@@ -331,7 +334,7 @@ int play(partie *p, int x, int y, int joueur)
     }
 
   // case déjà marquée
-  if (p->map[position] != 'O')
+  if (p->map[x-1][y-1] != 'O')
     {
       printf("joueur %d : case (%d, %d) marquee\n", joueur, x, y);
       return (-1);
@@ -340,7 +343,7 @@ int play(partie *p, int x, int y, int joueur)
   else 
     {
       // on marque la case 
-      p->map[position] = 'X';
+      p->map[x-1][y-1] = 'X';
       printf("le joueur %d a joué le coup (%d, %d).\n", joueur, x, y);
       if (alignement5(p, x, y, joueur) == 0) // mise a jour de la map
 	{
@@ -373,7 +376,7 @@ void destroy(partie *p){
 }
 
 // ####################################################################################
-char * getmap(partie *p){
+char ** getmap(partie *p){
   return p->map;
 }
 
@@ -384,12 +387,12 @@ int * getscore(partie *p){
 
 
 // ############################# fonctions affichage #################################
-void affiche_map(char * map, int l, int h){
+void affiche_map(char ** map, int l, int h){
   int i, j;
   printf("map : \n");  
-  for (i=0 ; i< h; i++){
-    for (j=0 ; j< l ; j++){
-      printf("%c", map[j+i*l]);     
+  for (j=0 ; j< h; j++){
+    for (i=0 ; i< l ; i++){
+      printf("%c", map[i][j]);     
     }
     printf("\n");
   }
@@ -415,6 +418,8 @@ int main(){
   printf("largeur : %d\n", p->l);
   printf("hauteur : %d\n", p->h);
   printf("nombre des joueurs : %d\n", p->nbjoueurs); 
+
+ 
   affiche_map(p->map, p->l, p->h);
   affiche_score(p->score, p->nbjoueurs);
 
