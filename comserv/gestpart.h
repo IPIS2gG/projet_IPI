@@ -9,3 +9,5 @@ void destroy(partie *);
 char * getmap(partie *);
 
 int getscore(partie *, int joueur);
+
+int getvainqueur(partie *);

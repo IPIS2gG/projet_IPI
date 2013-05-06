@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <protoserv.h>
+//#include <protoserv.h>
 
 // pour mes tests
 // gcc -Wall -o gestpart gestpart.c 
@@ -385,6 +385,20 @@ int getscore(partie *p, int joueur){
   return p->score[joueur-1];
 }
 
+int getvainqueur(partie *p){// et pour les ex aequo ? si ex aequo, le premier connecté gagné ??????????????
+  int max, vainqueur, i;
+  max = p->score[0];
+  vainqueur =1;
+  for (i=0 ; i < (p->nbjoueurs) ; i++){
+    if (p->score[i] > max){
+      max = p->score[i];
+      vainqueur = i+1;
+    } 
+  }
+  return vainqueur;
+
+}
+
 
 // ############################# fonctions affichage #################################
 void affiche_map(char ** map, int l, int h){
@@ -446,7 +460,7 @@ int main(){
   play(p, 5, 6, 1);
 
   affiche_map(getmap(p), p->l, p->h);
-  affiche_score(getscore(p), p->nbjoueurs);
+  affiche_score(p->score, p->nbjoueurs);
 
   printf(" ######################## \n");
   play(p, 3, 7, 2);
@@ -456,7 +470,7 @@ int main(){
   play(p, 2, 7, 3);
 
   affiche_map(getmap(p), p->l, p->h);
-  affiche_score(getscore(p), p->nbjoueurs);
+  affiche_score(p->score, p->nbjoueurs);
  
    
   printf(" ######################## \n");
@@ -468,7 +482,7 @@ int main(){
   play(p, 4, 3, 2); 
   
   affiche_map(getmap(p), p->l, p->h);
-  affiche_score(getscore(p), p->nbjoueurs);
+  affiche_score(p->score, p->nbjoueurs);
 
   printf(" ######################## \n");
   play(p, 6, 2, 3);
@@ -476,11 +490,12 @@ int main(){
   play(p, 6, 4, 2);
   play(p, 6, 5, 3);
   play(p, 6, 4, 1); 
-  play(p, 6, 6, 1);  
+  play(p, 6, 6, 3);  
 
   affiche_map(getmap(p), p->l, p->h);
-  affiche_score(getscore(p), p->nbjoueurs);
-
+  affiche_score(p->score, p->nbjoueurs);
+  printf("le vainqueur est le joueur %d avec un score de %d\n", getvainqueur(p), getscore(p, getvainqueur(p)));
+ 
   return 0;
 }
 
