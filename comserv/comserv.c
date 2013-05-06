@@ -102,7 +102,7 @@ int main(int argc, char** argv)
 	struct param_partie info_partie; //informations pour débuter la partie
 	std::set<int>::iterator it_stream;
 	std::map<int, pthread_t>::iterator it_thread;
-
+	unsigned int i;
 	
 	short cont;
 	
@@ -271,6 +271,13 @@ int main(int argc, char** argv)
 	pthread_mutex_destroy(&lock_connect);
 	
 	launch_game(&info_partie); //lancement du jeu avec les infos
+	
+	//fermeture de tous les stream_restant
+	for(i=0; i<info_partie.tab_stream.size(); ++i)
+	{
+		close(info_partie.tab_stream[i]);
+	}
+	print("Serveur shutting down ...\n");
 	return EXIT_SUCCESS;
 }
 

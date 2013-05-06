@@ -25,18 +25,30 @@ void launch_game(struct param_partie* infos)
 	std::vector<int> tab_stream=infos->tab_stream; //copies, on s'en fou, c'est des int et petite taille
 	std::vector<char*> tab_pseudo=infos->tab_pseudo;
 	unsigned int nb_joueur=tab_pseudo.size()-1;
-	char* buff;
+	unsigned int i;
+	
+	partie* part;
+	
 	char buff_read[50];
 	int r;
-	unsigned int i;
-	char* aff_map;
 	int n;
+	char* buff;
+	char* aff_map;
+	
 	int joueur_courant=1;
 	int joueur_precedant=1;
+	
 	bool cont; //boucle principale
+	bool cont_waiting; //attends la réponse du joueur courant
+	
 	fd_set readfs; //ensembles des fd lu par select
 	int max_fs=-1; //necessaire pour select
+	
 	int ret; //retour de select
+	int ret_play; //retour play
+	int x,y; //position de jeu donnée par le joueur
+	
+	int joueur_gagnant;
 	
 	for(i=0; i<tab_stream.size(); ++i)
 	{
@@ -71,7 +83,7 @@ void launch_game(struct param_partie* infos)
 	free(buff);
 	
 	print("Initialisation de la partie .... ");
-	partie* part = init(w,h,nb_joueur);
+	part = init(w,h,nb_joueur);
 	if(part==NULL)
 	{
 		print("fatal error !");
@@ -87,7 +99,7 @@ void launch_game(struct param_partie* infos)
 		print("Envoi à tous le nouvel etat de jeu\n");
 		aff_map=getmap(part);
 		sprintf(buff, "T %d %d %s", joueur_courant, 
-									getscore(part)[joueur_precedant-1],
+									getscore(part, joueur_precedant),
 									aff_map);
 		free(aff_map);
 		n=strlen(buff)+1;
@@ -96,54 +108,127 @@ void launch_game(struct param_partie* infos)
 			write(tab_stream[i], buff, n);
 		}
 		
-		//écoute des gens
-		FD_ZERO(&readfs);
-		for(i=0; i<tab_stream.size(); ++i) //on écoutera aussi l'admin
+		cont_waiting=true;
+		while(cont_waiting)
 		{
-			FD_SET(tab_stream[i], &readfs);
-		}
-		
-		printf("Attente de communication (réponse attendue de %d)\n", tab_stream[joueur_courant]);
-		fflush(stdout);
-		ret=select(max_fs+1, &readfs, NULL, NULL, NULL);
-		if(ret<0)
-		{
-			printf("Erreur : seclect %s\n", msg_err);
-			exit(-1);
-		}
-		
-		//on regarde qui a parlé
-		if(FD_ISSET(tab_stream[joueur_courant], &readfs))
-		{
-			//joueur courant a parlé
-			printf("Joueur courant (%d) a parlé -->", tab_stream[i]);
-			fflush(stdout);
-			r=read(tab_stream[i], buff_read, 50);
-			write(1, buff_read, r);
-			printf("<-- (%d char)\n", r);
-			fflush(stdout);
-			//traitement
-		}
-		else
-		{
-			for(i=0; i<tab_stream.size(); ++i)
+			//écoute des gens
+			FD_ZERO(&readfs);
+			for(i=0; i<tab_stream.size(); ++i) //on écoutera aussi l'admin
 			{
-				if(FD_ISSET(tab_stream[i], &readfs))
+				FD_SET(tab_stream[i], &readfs);
+			}
+		
+			printf("Attente de communication (réponse attendue de [%s - %d])\n",
+							tab_pseudo[joueur_courant], tab_stream[joueur_courant]);
+			fflush(stdout);
+			ret=select(max_fs+1, &readfs, NULL, NULL, NULL);
+			if(ret<0)
+			{
+				printf("Erreur : seclect %s\n", msg_err);
+				exit(-1);
+			}
+		
+			//on regarde qui a parlé
+			if(FD_ISSET(tab_stream[joueur_courant], &readfs))
+			{
+				//joueur courant a parlé
+				cont_waiting=false;
+				printf("Joueur courant [%s - %d] (stream %d) a parlé -->",
+												tab_pseudo[joueur_courant], joueur_courant, tab_stream[i]);
+				fflush(stdout);
+				r=read(tab_stream[i], buff_read, 50);
+				write(1, buff_read, r);
+				printf("<-- (%d char)\n", r);
+				fflush(stdout);
+				//traitement
+				if(buff_read[0]!='P')
 				{
-					printf("   ERREUR : socket %d a parlé -->", tab_stream[i]);
+					print("Erreur protocole [P x y] -> ignorée\n");
+				}
+				else
+				{
+					//Extraction des infos
+					sscanf(buff_read, "%*c %2d %2d", &x, &y);
+					printf("Player joue en x=%d y=%d\n", x, y);
+
+					ret_play=play(part, x,y,joueur_courant);
+					printf("Gestpart répond %d\n", ret);
 					fflush(stdout);
-					r=read(tab_stream[i], buff_read, 50);
-					write(1, buff_read, r);
-					printf("<-- (%d char)\n", r);
-					fflush(stdout);
-					print("   ==> communication ignorée\n");
+					switch(ret_play)
+					{
+						case -1 :
+							//erreur de jeu
+							//[buf permet d'envoyer T joueur score map, donc M map ...]
+							aff_map=getmap(part);
+							sprintf(buff, "M %s", aff_map);
+							free(aff_map);
+							print("Envoi de 'M map' au joueur courant\n");
+							write(tab_stream[joueur_courant], buff, strlen(buff)+1);
+							//on laisse cont_waiting=true -> on attend toujours le même joueur
+							break;
+						case 0 :
+							print("Victoire d'un joueur\n");
+							cont_waiting=false;
+							cont=false;
+							break;
+						default :
+							print("Coup correct\n");
+							joueur_precedant=joueur_courant;
+							joueur_courant=ret;
+							printf("Au joueur [%s - %d] de jouer !\n", tab_pseudo[joueur_courant],
+													tab_stream[joueur_courant]);
+							cont_waiting=false;
+							break;
+					}
+				}
+					
+			}
+			else
+			{
+				for(i=0; i<tab_stream.size(); ++i)
+				{
+					if(FD_ISSET(tab_stream[i], &readfs))
+					{
+						printf("   ERREUR : socket %d a parlé -->", tab_stream[i]);
+						fflush(stdout);
+						r=read(tab_stream[i], buff_read, 50);
+						write(1, buff_read, r);
+						printf("<-- (%d char)\n", r);
+						fflush(stdout);
+						print("   ==> communication ignorée\n");
+					}
 				}
 			}
 		}
 	}
 	free(buff);
+	//determinantion du gagnant
+	joueur_gagnant=1;
+	for(i=2; i<=nb_joueur; ++i)
+	{
+		if(getscore(part, i)>getscore(part, joueur_gagnant))
+		{
+			joueur_gagnant=i;
+		}
+	}
+	aff_map=getmap(part);
+	//envoi à tous des scores finaux [BOURINAGE]
+	buff=(char*) calloc(2+18+nb_joueur*5+w*h+1, sizeof(char));
+	print("Envoi des données de victoire\n");
+	sprintf(buff, "W %s", tab_pseudo[joueur_gagnant]);
+	for(i=1; i<=nb_joueur; ++i)
+	{
+		sprintf(buff, "%s %d", buff, getscore(part, i));
+	}
+	sprintf(buff, "%s %s", buff, aff_map);
+	free(aff_map);
+	n=strlen(buff)+1;
+	for(i=0; i<=tab_stream.size(); ++i)
+	{
+		write(tab_stream[i], buff, n);
+	}
+	free(buff);
 	
-	
-	pause();
+	print("Jeu terminé\n");
 }
 	

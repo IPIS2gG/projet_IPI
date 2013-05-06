@@ -93,9 +93,9 @@ char * getmap(partie * p)
 	return buff;
 }
 
-int * getscore(partie * p)
+int getscore(partie * p, int player)
 {
-	return p->scores;
+	return p->scores[player-1];
 }
 	
 	
