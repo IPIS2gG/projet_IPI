@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-//#include <protoserv.h>
+#include <protoserv.h>
 
 // pour mes tests
 // gcc -Wall -o gestpart gestpart.c 
