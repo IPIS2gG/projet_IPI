@@ -181,6 +181,157 @@ int alignement5(partie *p, int x, int y, int joueur)
 
 }
 
+// alignement 5 bis
+
+int alignement5bis(partie *p, int x, int y, int joueur)
+{
+  int largeur, hauteur;
+  int i, j;
+  largeur = p->l;
+  hauteur = p->h;
+  char **map = p->map;//
+  int ret;
+  char s[1];
+  ret = sprintf(s, "%d", joueur);
+  if (ret < 0)
+    {
+      fprintf(stderr, "erreur de conversion int -> string.\n");
+    }
+  
+  // alignement sur une ligne
+  int compteur_ligne;
+  compteur_ligne = 0;
+  i = 0;
+  j = -1;
+  while (((x-1+i) >= 0) && ((x-1+i) < largeur) && (map[x-1+i][y-1] == 'X')){
+    compteur_ligne++;
+    i++;
+  }
+  while (((x-1+j) >= 0) && ((x-1+j) < largeur) && (map[x-1+j][y-1] == 'X')){
+    compteur_ligne++;
+    j--;
+  }
+
+  if (compteur_ligne >= 5){
+    // mise à jour de la map
+    i = 0;
+    j = -1;
+    while (((x-1+i) >= 0) && ((x-1+i) < largeur) && (map[x-1+i][y-1] == 'X')){
+      map[x-1+i][y-1] = *s;
+      i++;
+    }
+    while (((x-1+j) >= 0) && ((x-1+j) < largeur) && (map[x-1+j][y-1] == 'X')){
+      map[x-1+j][y-1] = *s;
+      j--;
+    }
+    return 0;
+  }    
+
+  // alignement sur une colonne 
+  int compteur_col;
+  compteur_col = 0;
+  i=0;
+  j=-1;
+  while ((y-1+i >=0) && (y-1+i < hauteur) && (map[x-1][y-1+i] == 'X')){
+    compteur_col++;
+    i++;
+  }
+  while ((y-1+j >=0) && (y-1+j < hauteur) && (map[x-1][y-1+j] == 'X')){
+    compteur_col++;
+    j--;
+  }
+
+  if (compteur_col >= 5){
+    i=0;
+    j = -1;
+    while ((y-1+i >=0) && (y-1+i < hauteur) && (map[x-1][y-1+i] == 'X')){
+      map[x-1][y-1+i] = *s;
+      i++;
+    }  
+    while ((y-1+j >=0) && (y-1+j < hauteur) && (map[x-1][y-1+j] == 'X')){
+      map[x-1][y-1+j] = *s;
+      j--;
+    }
+    return 0;
+  }
+   
+  // alignement sur une diagonale ou antidiagonale 
+
+  int compteur_diag;
+  compteur_diag = 0;
+  i = 0;
+  j = -1;
+  while ((x-1+i >= 0) && (x-1+i < largeur) && (y-1+i >=0) && (y-1+i < hauteur) && (map[x-1+i][y-1+i] == 'X')){
+    compteur_diag++;
+    i++;
+  }
+  while ((x-1+j >= 0) && (x-1+j < largeur) && (y-1+j >=0) && (y-1+j < hauteur) && (map[x-1+j][y-1+j] == 'X')){
+    compteur_diag++;
+    j--;
+  }
+  if (compteur_diag >= 5){
+    i = 0;
+    j = -1;
+    while ((x-1+i >= 0) && (x-1+i < largeur) && (y-1+i >=0) && (y-1+i < hauteur) && (map[x-1+i][y-1+i] == 'X')){
+      map[x-1+i][y-1+i] = *s;
+      i++;
+    }
+    while ((x-1+j >= 0) && (x-1+j < largeur) && (y-1+j >=0) && (y-1+j < hauteur) && (map[x-1+j][y-1+j] == 'X')){
+      map[x-1+j][y-1+j] = *s;
+      j--;
+    } 
+    return 0;
+  }
+
+  int compteur_antidiag;
+  compteur_antidiag = 0;
+  i = 0;
+  j = -1;
+  while ((x-1-i >= 0) && (x-1-i < largeur) && (y-1+i >=0) && (y-1+i < hauteur) && (map[x-1-i][y-1+i] == 'X')){
+    compteur_antidiag++;
+    i++;
+  }
+  while ((x-1-j >= 0) && (x-1-j < largeur) && (y-1+j >=0) && (y-1+j < hauteur) && (map[x-1-j][y-1+j] == 'X')){
+    compteur_antidiag++;
+    j--;
+  }
+  if (compteur_antidiag >= 5){
+    i = 0;
+    j = -1;
+    while ((x-1-i >= 0) && (x-1-i < largeur) && (y-1+i >=0) && (y-1+i < hauteur) && (map[x-1-i][y-1+i] == 'X')){
+      map[x-1-i][y-1+i] = *s;
+      i++;
+    }
+    while ((x-1-j >= 0) && (x-1-j < largeur) && (y-1+j >=0) && (y-1+j < hauteur) && (map[x-1-j][y-1+j] == 'X')){
+      map[x-1-j][y-1+j] = *s;
+      j--;
+    } 
+    return 0;
+  }
+
+  
+  /* aucun alignement */
+  // on retourne 1
+  return 1;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ##########################################################################################
 // alignement5possible détecte les alignements de 5 possibles autour de la case (x, y)
 // retourne 0 si alignement de 5 possible
@@ -345,7 +496,7 @@ int play(partie *p, int x, int y, int joueur)
       // on marque la case 
       p->map[x-1][y-1] = 'X';
       printf("le joueur %d a joué le coup (%d, %d).\n", joueur, x, y);
-      if (alignement5(p, x, y, joueur) == 0) // mise a jour de la map
+      if (alignement5bis(p, x, y, joueur) == 0) // mise a jour de la map ####################
 	{
 	  printf("joueur %d : alignement de 5 : (%d, %d)\n", joueur, x, y);
 	  // mise a jour du score du joueur
@@ -463,12 +614,12 @@ int main(){
   affiche_score(p->score, p->nbjoueurs);
 
   printf(" ######################## \n");
-  play(p, 3, 7, 2);
+  play(p, 1, 7, 2);
   play(p, 4, 7, 3); 
   play(p, 5, 7, 1);
   play(p, 6, 7, 2);
   play(p, 2, 7, 3);
-
+  play(p, 3, 7, 2);
   affiche_map(getmap(p), p->l, p->h);
   affiche_score(p->score, p->nbjoueurs);
  
