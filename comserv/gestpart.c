@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+//#include <time.h>
 #include <protoserv.h>
 
 // pour mes tests
@@ -48,7 +49,7 @@ partie *init(int l, int h, int nbjoueurs)
 }
 
 // ########################################################################################################
-// alignement détecte les alignements de 5 autour de la case (x, y) et met à jour la map avec le numero du joueur si alignement de 5 
+// alignement détecte les alignements de 5 (seulement des alignements de 5) autour de la case (x, y) et met à jour la map avec le numero du joueur si alignement de 5 
 // retourne 
 // 0 si alignement de 5 autour de la case (x, y) et met à jour la map avec le numero du joueur
 // 1 sinon
@@ -178,10 +179,13 @@ int alignement5(partie *p, int x, int y, int joueur)
   /* aucun alignement */
   // on retourne 1
   return 1;
-
 }
 
-// alignement 5 bis
+// ##########################################################################################################################
+// alignement 5 bis détecte les alignements de 5 ou plus autour de la case (x, y) et met à jour la map avec le numero du joueur si alignement de 5 ou plus 
+// retourne 
+// 0 si alignement de 5 autour de la case (x, y) et met à jour la map avec le numero du joueur
+// 1 sinon
 
 int alignement5bis(partie *p, int x, int y, int joueur)
 {
@@ -255,8 +259,7 @@ int alignement5bis(partie *p, int x, int y, int joueur)
     return 0;
   }
    
-  // alignement sur une diagonale ou antidiagonale 
-
+  // alignement sur une diagonale  
   int compteur_diag;
   compteur_diag = 0;
   i = 0;
@@ -283,6 +286,8 @@ int alignement5bis(partie *p, int x, int y, int joueur)
     return 0;
   }
 
+
+  // alignement sur une antidiagonale
   int compteur_antidiag;
   compteur_antidiag = 0;
   i = 0;
@@ -318,20 +323,6 @@ int alignement5bis(partie *p, int x, int y, int joueur)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ##########################################################################################
 // alignement5possible détecte les alignements de 5 possibles autour de la case (x, y)
 // retourne 0 si alignement de 5 possible
@@ -355,7 +346,7 @@ int alignement5possible(partie *p, int x, int y){
 	  // rester sur la meme ligne 
 	  if ((x-1+j >=0) && (x-1+j < largeur ))
 	    {
-	      if (((map[x-1][y-1] == 'X') || (map[x-1][y-1] == 'O')) && ((map[x-1+j][y-1] == 'X') || (map[x-1+j][y-1] == 'O')))
+	      if ((map[x-1+j][y-1] == 'X') || (map[x-1+j][y-1] == 'O'))
 		{
 		  compteur++;
 		}
@@ -377,7 +368,7 @@ int alignement5possible(partie *p, int x, int y){
 	{
 	  if ((y-1+j >= 0) && (y-1+j < hauteur))
 	    {
-	      if (((map[x-1][y-1] == 'X') || (map[x-1][y-1] == 'O')) && ((map[x-1][y-1+j] == 'X') || (map[x-1][y-1+j] == 'O')))
+	      if ((map[x-1][y-1+j] == 'X') || (map[x-1][y-1+j] == 'O'))
 		{
 		  compteur++;
 		}
@@ -402,7 +393,7 @@ int alignement5possible(partie *p, int x, int y){
 	  // alignement possible sur une diagonale 
 	  if ((x-1+j >= 0) && (x-1+j < largeur) && (y-1+j >=0) && (y-1+j < hauteur))
 	    {
-	      if (((map[x-1][y-1] == 'X') || (map[x-1][y-1] == 'O')) && ((map[x-1+j][y-1+j] == 'X') || (map[x-1+j][y-1+j] == 'O')))
+	      if ((map[x-1+j][y-1+j] == 'X') || (map[x-1+j][y-1+j] == 'O'))
 		{
 		  compteur1++;
 		}
@@ -412,7 +403,7 @@ int alignement5possible(partie *p, int x, int y){
 	  // alignement possible sur une antidiagonale 
 	  if ((x-1-j >= 0) && (x-1-j < largeur ) && (y-1+j >= 0) && (y-1+j < hauteur))
 	    {
-	      if (((map[x-1][y-1] == 'X') || (map[x-1][y-1] == 'O')) && ((map[x-1-j][y-1+j] == 'X') || (map[x-1-j][y-1+j] == 'O')))
+	      if ((map[x-1-j][y-1+j] == 'X') || (map[x-1-j][y-1+j] == 'O'))
 		{
 		  compteur2 += 1;
 		}
@@ -450,17 +441,16 @@ int is_fin_de_partie(partie *p){
   int i, j;
   largeur = p->l;
   hauteur = p->h;
-  int test;
-  test = 0;
   for (i=1 ; i <= hauteur ; i++){
     for (j=1 ; j<= largeur  ; j++){
-      if (alignement5possible(p, j, i) == 0){
-	test = 1;
+      if (((p->map[j-1][i-1] == 'O') || (p->map[j-1][i-1] == 'X')) && (alignement5possible(p, j, i) == 0)){
+	// 1 alignement de 5 possible
+	return 1;
       }
-      
     }
   }
-  return test;
+  // pas d'alignement de 5 possible
+  return 0;
 }
 
 // ###############################################################################################################
@@ -550,7 +540,6 @@ int getvainqueur(partie *p){// et pour les ex aequo ? si ex aequo, le premier co
 
 }
 
-
 // ############################# fonctions affichage #################################
 void affiche_map(char ** map, int l, int h){
   int i, j;
@@ -577,18 +566,19 @@ void affiche_score(int * score, int nbjoueurs){
 
 // ########################### test des fonctions ##################################
 int main(){
-
+  int d, f;
   partie *p;
   p = init(6, 7, 3); 
   printf("largeur : %d\n", p->l);
   printf("hauteur : %d\n", p->h);
   printf("nombre des joueurs : %d\n", p->nbjoueurs); 
-
+  d = time(NULL);
  
   affiche_map(p->map, p->l, p->h);
   affiche_score(p->score, p->nbjoueurs);
 
   printf(" ######################## \n");
+ 
   play(p, 1, 1, 1);
   play(p, 2, 2, 2);
   play(p, 3, 3, 3);
@@ -607,7 +597,7 @@ int main(){
   play(p, 1, 6, 3);
   play(p, 2, 6, 1);
   play(p, 3, 6, 2);
-  play(p, 4, 6, 3); 
+  play(p, 4, 6, 3);
   play(p, 5, 6, 1);
 
   affiche_map(getmap(p), p->l, p->h);
@@ -646,7 +636,8 @@ int main(){
   affiche_map(getmap(p), p->l, p->h);
   affiche_score(p->score, p->nbjoueurs);
   printf("le vainqueur est le joueur %d avec un score de %d\n", getvainqueur(p), getscore(p, getvainqueur(p)));
- 
+  f = time(NULL);
+  printf("temps mis par play : %d\n",f-d); 
   return 0;
 }
 
