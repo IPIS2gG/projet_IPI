@@ -329,7 +329,7 @@ int alignement5bis(partie *p, int x, int y, int joueur)
 // alignement5possible détecte les alignements de 5 possibles autour de la case (x, y)
 // retourne 0 si alignement de 5 possible
 // 1 sinon
-int alignement5possible(partie *p, int x, int y){
+int alignement5possiblebis(partie *p, int x, int y){
   int largeur, hauteur;
   int i, j;
   char **map;
@@ -429,7 +429,94 @@ int alignement5possible(partie *p, int x, int y){
   // on retourne 1
   return 1;
 
+}
 
+
+
+
+int alignement5possible(partie *p, int x, int y){
+  int largeur, hauteur;
+  int i, j;
+  char **map;
+  largeur = p->l;
+  hauteur = p->h;
+  map = p->map;
+
+ 
+  /* alignement possible sur une ligne ? */
+  int compteur_ligne;
+  compteur_ligne = 0;
+  i = 0;
+  j = -1;
+  while (((x+i) >= 0) && ((x+i) < largeur) && ((map[x+i][y] == 'X') || (map[x+i][y] == 'O'))){
+    compteur_ligne++;
+    i++;
+  }
+  while (((x+j) >= 0) && ((x+j) < largeur) && ((map[x+j][y] == 'X') || (map[x+j][y] == 'O'))){
+    compteur_ligne++;
+    j--;
+  }
+  if (compteur_ligne >= 5){// mettre cette condition dans les while
+    return 0;
+  }  
+    
+  /* alignement possible sur une colonne ? */
+
+  int compteur_col;
+  compteur_col = 0;
+  i = 0;
+  j = -1;
+  while ((y+i >=0) && (y+i < hauteur) && ((map[x][y+i] == 'X') || (map[x][y+i] == 'O'))){
+    compteur_col++;
+    i++;
+  }
+  while ((y+j >=0) && (y+j < hauteur) && ((map[x][y+j] == 'X') || (map[x][y+j] == 'O'))){
+    compteur_col++;
+    j--;
+  }
+  if (compteur_col >= 5){
+    return 0;
+  }
+
+
+  /* alignement possible sur une diagonale */
+  int compteur_diag;
+  compteur_diag = 0;
+  i = 0;
+  j = -1;
+  while ((x+i >= 0) && (x+i < largeur) && (y+i >=0) && (y+i < hauteur) && ((map[x+i][y+i] == 'X') || (map[x+i][y+i] == 'O'))){
+    compteur_diag++;
+    i++;
+  }
+  while ((x+j >= 0) && (x+j < largeur) && (y+j >=0) && (y+j < hauteur) && ((map[x+j][y+j] == 'X') || (map[x+j][y+j] == 'O'))){
+    compteur_diag++;
+    j--;
+  }
+  if (compteur_diag >= 5){
+    return 0;
+  }
+
+  // alignement possible sur une antidiagonale ?
+  int compteur_antidiag;
+  compteur_antidiag = 0;
+  i = 0;
+  j = -1;
+  while ((x-i >= 0) && (x-i < largeur) && (y+i >=0) && (y+i < hauteur) && ((map[x-i][y+i] == 'X') || (map[x-i][y+i] == 'O'))){
+    compteur_antidiag++;
+    i++;
+  }
+  while ((x-j >= 0) && (x-j < largeur) && (y+j >=0) && (y+j < hauteur) && ((map[x-j][y+j] == 'X') || (map[x-j][y+j] == 'O'))){
+    compteur_antidiag++;
+    j--;
+  }
+  if (compteur_antidiag >= 5){
+    return 0;
+  }
+ 
+
+  /* aucun alignement possible */
+  // on retourne 1
+  return 1;
 
 }
 
@@ -472,14 +559,14 @@ int play(partie *p, int x, int y, int joueur)
   // coordonnees non valides
   if ((x<0) || (x >= largeur) || (y<0) || (y >= hauteur) )
     {
-      printf("joueur %d : coup (%d, %d) non valide\n", joueur, x, y);     
+      printf("           joueur %d : coup (%d, %d) non valide\n", joueur, x, y);     
       return (-1);
     }
 
   // case déjà marquée
   if (p->map[x][y] != 'O')
     {
-      printf("joueur %d : case (%d, %d) marquee\n", joueur, x, y);
+      printf("          joueur %d : case (%d, %d) marquee\n", joueur, x, y);
       return (-1);
     }
   // case vide
@@ -487,17 +574,17 @@ int play(partie *p, int x, int y, int joueur)
     {
       // on marque la case 
       p->map[x][y] = 'X';
-      printf("le joueur %d a joué le coup (%d, %d).\n", joueur, x, y);
+      printf("          le joueur %d a joué le coup (%d, %d).\n", joueur, x, y);
       if (alignement5bis(p, x, y, joueur) == 0) // mise a jour de la map ####################
 	{
-	  printf("joueur %d : alignement de 5 : (%d, %d)\n", joueur, x, y);
+	  printf("          joueur %d : alignement de 5 : (%d, %d)\n", joueur, x, y);
 	  // mise a jour du score du joueur
 	  p->score[joueur-1]++;	    
 	}
 
       if (is_fin_de_partie(p) == 0)
 	{
-	  printf("fin de la partie !\n");
+	  printf("          fin de la partie !\n");
 	  return 0;
 	}
       if (joueur == nbjoueurs)
@@ -590,9 +677,9 @@ void affiche_score(int * score, int nbjoueurs){
   printf("\n");
 }
 
-
-// ########################### test des fonctions ##################################
 /*
+// ########################### test des fonctions ##################################
+
 int main(){
 
   partie *p;
@@ -671,5 +758,6 @@ int main(){
  
   return 0;
 }
+
 
 */
