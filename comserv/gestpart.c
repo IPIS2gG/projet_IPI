@@ -621,7 +621,7 @@ char ** getmapbis(partie *p){
 
 char * getmap(partie *p){
   int i, j, k;
-  char *s =  malloc(((p->l)*(p->h)) * sizeof(char));
+  char *s =  calloc(((p->l)*(p->h))+1, sizeof(char));
   k = 0;
   for (j=0 ; j < p->h ; j++){
     for (i=0 ; i < p->l ; i++){
@@ -629,6 +629,7 @@ char * getmap(partie *p){
       k++;
     }
   }
+  s[k] = '\0';
   return s;
 }
 
@@ -677,9 +678,9 @@ void affiche_score(int * score, int nbjoueurs){
   printf("\n");
 }
 
-/*
-// ########################### test des fonctions ##################################
 
+// ########################### test des fonctions ##################################
+/*
 int main(){
 
   partie *p;
@@ -758,6 +759,7 @@ int main(){
  
   return 0;
 }
+
 
 
 */
