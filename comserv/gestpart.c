@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 //#include <protoserv.h>
-#include <gestpart.h>
+#include "gestpart.h"
 
 // pour mes tests
 // gcc -Wall -o gestpart gestpart.c 
@@ -592,6 +592,7 @@ void affiche_score(int * score, int nbjoueurs){
 
 
 // ########################### test des fonctions ##################################
+/*
 int main(){
 
   partie *p;
@@ -671,3 +672,4 @@ int main(){
   return 0;
 }
 
+*/
