@@ -21,14 +21,22 @@
 
 // sha256 crypte un mot en SHA256
 // entrée: mot (à crypter) et tampon (où stocker le hash)
-void sha256(char* mot, char tampon[64]){
+void sha256(char* sel, char* mot, char tampon[64]){
+	printf("FONCTION SHA256\nSEL %s\nMOT %s\n",sel,mot);
+
+	char toHash[64];
+	strcpy(toHash,mot);
+	
+	// On ajoute un sel pour éviter les attaques de type RAINBOW TABLES
+	// Le sel sera composé de 3 lettres du pseudo
+	strncat(toHash,sel,3);
 
 	// Initialisation
 	unsigned char hash[SHA256_DIGEST_LENGTH];
 	SHA256_CTX sha256;
 	SHA256_Init(&sha256);
 	// Hashage du mot
-	SHA256_Update(&sha256, mot, strlen(mot));
+	SHA256_Update(&sha256, toHash, strlen(toHash));
 	// Stockage du résultat (le hashé)
 	SHA256_Final(hash, &sha256);
 
@@ -37,6 +45,8 @@ void sha256(char* mot, char tampon[64]){
 		// Insertion dans le tampon
 		sprintf(tampon+(2*i), "%02x", hash[i]);
 	}
+
+	printf("HASHE : %s",tampon);
 }
 
 //// [ BASE DE DONNEES ]
@@ -51,9 +61,9 @@ void initDb(PGconn* conn){
 		fprintf(stderr,"fail CREATE TABLE");
 	}
 
-	// Insertion du tuple admin (alexandre/motdepasse)
+	// Insertion du tuple admin (admin/motdepasse)
 	// (L'énoncé présuppose qu'il n'y a qu'un admin)
-	res=PQexec(conn,"INSERT INTO users VALUES ('admin','967520ae23e8ee14888bae72809031b98398ae4a636773e18fff917d77679334','A')");
+	res=PQexec(conn,"INSERT INTO users VALUES ('admin','9dcbf36f844d90127640c889ca77d9fe12b9b3a883f056ef3960b1b022c74e69','A')");
 
 	// Affichage du résultat 
 	printf("%s",PQcmdTuples(res));
@@ -84,7 +94,7 @@ char checkAuth(PGconn* conn, char name[32], char pass[32]){
 		char hashTry[65];
 
 		// Cryptons le mot de passe essayé
-		sha256(pass,hashTry);
+		sha256(name,pass,hashTry);
 
 		// Est-ce le même hash que le bon mot de passe ?
 		if(!strcmp(hashTry,PQgetvalue(res,0,0))){
@@ -109,7 +119,7 @@ char createUser(PGconn* conn, char name[32], char pass[32]){
 	char tampon[64];
 
 	// On crypte le mot de passe
-	sha256(pass,tampon);
+	sha256(name,pass,tampon);
 	paramValues[1]=tampon;
 
 	// Insertion du nouveau joueur
@@ -149,9 +159,12 @@ void aff_info(struct sockaddr_in* cible){
 
 // Lecture dans la socket
 void reading(PGconn* conn, int sock){
+
 	char buff[BUF_LEN];
 	int r;
+
 	print(" - - - Prêt pour une demande de COMSERV...\n");
+
 	r=read(sock, buff, BUF_LEN);
 	if(r<=0){
 		fprintf(stderr,"fail: COMSERV disconnected : %s\n", msg_err);
@@ -159,9 +172,12 @@ void reading(PGconn* conn, int sock){
 		// Quitter la base de données puis le serveur
 		PQfinish(conn);
 		exit(1);
+
 	}else{
+
 		buff[r]='\0';
 		printf("Recu: '%s'\n", buff);
+
 		if(buff[0]=='C'){
 			// COMSERV demande une vérification d'identifiants
 			char protocole[2];
@@ -226,6 +242,9 @@ void reading(PGconn* conn, int sock){
 
 //// FONCTION PRINCIPALE
 int main(int argc, char const *argv[]){
+	char tampontest[64];
+	sha256("admin","motdepasse",tampontest);
+
 	// Vérification du nombre d'arguments
 	if(argc!=1){
 		fprintf(stderr, "usage: %s\n",argv[0]);
