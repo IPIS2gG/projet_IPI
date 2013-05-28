@@ -17,10 +17,12 @@
 #define msg_err strerror(errno)
 #define BUF_LEN 100
 
-//// CRYPTAGE
+//// [ CRYPTAGE ]
 
-// sha256 prend un mot et un buffer, et remplie le sha256 associé au mot dans le buffer.
+// sha256 crypte un mot en SHA256
+// entrée: mot (à crypter) et tampon (où stocker le hash)
 void sha256(char* mot, char tampon[64]){
+
 	// Initialisation
 	unsigned char hash[SHA256_DIGEST_LENGTH];
 	SHA256_CTX sha256;
@@ -29,22 +31,31 @@ void sha256(char* mot, char tampon[64]){
 	SHA256_Update(&sha256, mot, strlen(mot));
 	// Stockage du résultat (le hashé)
 	SHA256_Final(hash, &sha256);
+
 	int i=0;
 	for(i=0;i<SHA256_DIGEST_LENGTH;i++){
+		// Insertion dans le tampon
 		sprintf(tampon+(2*i), "%02x", hash[i]);
 	}
 }
 
-//// BASE DE DONNEES
+//// [ BASE DE DONNEES ]
 
-// initDb crée la table users et insère le tuple admin.
+// initDb initialise la base de données (crée la table users et insère l'admin)
 void initDb(PGconn* conn){
 	PGresult   *res;
+
+	// Création de la table (et de ses contraintes)
 	res=PQexec(conn,"CREATE TABLE users (name VARCHAR(32) PRIMARY KEY NOT NULL, hash VARCHAR(64) NOT NULL, type CHAR NOT NULL, CONSTRAINT dom_type CHECK (type IN('A','J','0')))");
 	if(!res){
 		fprintf(stderr,"fail CREATE TABLE");
 	}
-	res=PQexec(conn,"INSERT INTO users VALUES ('alexandre','967520ae23e8ee14888bae72809031b98398ae4a636773e18fff917d77679334','A')");
+
+	// Insertion du tuple admin (alexandre/motdepasse)
+	// (L'énoncé présuppose qu'il n'y a qu'un admin)
+	res=PQexec(conn,"INSERT INTO users VALUES ('admin','967520ae23e8ee14888bae72809031b98398ae4a636773e18fff917d77679334','A')");
+
+	// Affichage du résultat 
 	printf("%s",PQcmdTuples(res));
 }
 
@@ -54,18 +65,28 @@ char checkAuth(PGconn* conn, char name[32], char pass[32]){
 	paramValues[0]=name;
 
 	PGresult *res;
+
+	// Récupération du hash et du type (admin ou user) de l'utilisateur demandé (name)
 	res=PQexecParams(conn,"SELECT hash,type FROM users WHERE name=$1",
-		1,NULL,paramValues,NULL,NULL,1);
+		1,NULL,(const char* const*) paramValues,NULL,NULL,1);
 	if(PQresultStatus(res) != PGRES_TUPLES_OK){
 		// Requête invalide
+		// Affichage de l'erreur
 		fprintf(stderr,"%s",PQerrorMessage(conn));
-		PQclear(res); exit_nicely(conn);
+
+		// Quitter la base de données puis le serveur
+		PQclear(res);
+		PQfinish(conn);
+		exit(1);
 	}
+
 	if(PQntuples(res)==1){
-		// User inexistant
 		char hashTry[65];
+
+		// Cryptons le mot de passe essayé
 		sha256(pass,hashTry);
 
+		// Est-ce le même hash que le bon mot de passe ?
 		if(!strcmp(hashTry,PQgetvalue(res,0,0))){
 			// Identifiants corrects. Renvoie A ou J (admin ou joueur)
 			return PQgetvalue(res,0,1)[0];
@@ -74,8 +95,10 @@ char checkAuth(PGconn* conn, char name[32], char pass[32]){
 			return '0';
 		}
 	}else{
+		// Utilisateur inexistant
 		return '0';
 	}
+
 	PQclear(res);
 }
 
@@ -84,12 +107,14 @@ char createUser(PGconn* conn, char name[32], char pass[32]){
 	char* paramValues[2];
 	paramValues[0]=name;
 	char tampon[64];
+
+	// On crypte le mot de passe
 	sha256(pass,tampon);
 	paramValues[1]=tampon;
 
-
+	// Insertion du nouveau joueur
 	if(PQresultStatus(PQexecParams(conn,"INSERT INTO users VALUES ($1,$2,'J')",
-		2,NULL,paramValues,NULL,NULL,1)) != PGRES_COMMAND_OK){
+		2,NULL,(const char* const*) paramValues,NULL,NULL,1)) != PGRES_COMMAND_OK){
 		fprintf(stderr,"%s",PQerrorMessage(conn));
 		return '0';
 	}
@@ -97,11 +122,23 @@ char createUser(PGconn* conn, char name[32], char pass[32]){
 }
 
 
-//// RESEAU
-void print(char *s){ printf("%s", s); fflush(stdout); }
+//// [ RESEAU ]
 
-void flush(){ int c; while ((c = getchar ()) != '\n' && c != EOF); }
+// Affichage d'une chaine de caractères sur la sortie standard
+// Entrée : chaine de caractères (char*)
+void print(char *s){
+	printf("%s", s);
+	fflush(stdout);
+}
+
+// On vide stdin pour éviter des erreurs imprévues
+void flush(){
+	int c;
+	while ((c = getchar ()) != '\n' && c != EOF);
+}
   
+
+// Affichage des informations de cnnexions
 void aff_info(struct sockaddr_in* cible){
 	printf("[%s:%d]",
 		inet_ntoa((struct in_addr) cible->sin_addr),
@@ -110,49 +147,76 @@ void aff_info(struct sockaddr_in* cible){
 	fflush(stdout);
 }
 
+// Lecture dans la socket
 void reading(PGconn* conn, int sock){
 	char buff[BUF_LEN];
 	int r;
-	print("Attente de données...\n");
+	print(" - - - Prêt pour une demande de COMSERV...\n");
 	r=read(sock, buff, BUF_LEN);
 	if(r<=0){
-		printf("Erreur (client déconnecté ?) : %s\n", msg_err);
-	}
-	else{
+		fprintf(stderr,"fail: COMSERV disconnected : %s\n", msg_err);
+
+		// Quitter la base de données puis le serveur
+		PQfinish(conn);
+		exit(1);
+	}else{
 		buff[r]='\0';
 		printf("Recu: '%s'\n", buff);
 		if(buff[0]=='C'){
+			// COMSERV demande une vérification d'identifiants
 			char protocole[2];
 			char id[2];
 			char name[32];
 			char pass[32];
+
+			// Récupération des informations
 			if(sscanf(buff,"%s %s %s %s", protocole, id, name, pass)==-1){
-				fprintf(stderr,"fail: scanf1");	exit(1);
+				fprintf(stderr,"fail: sscanf user");
+				exit(1);
 			}
 
+			// On modifie le buffer pour le renvoyer
 			buff[0]='c';
-			buff[5]=checkAuth(conn,name,pass);
-			buff[6]='\0';
+
+			// MAX 99 JOUEURS
+			if(buff[3]==' '){
+				// l'identifiant est à un chiffre
+				buff[4]=checkAuth(conn,name,pass);
+				buff[5]='\0';
+			}else{
+				// l'identifiant est à deux chiffres
+				buff[5]=checkAuth(conn,name,pass);
+				buff[6]='\0';
+			}
+
 			printf("Envoi: '%s'\n", buff);
-			if(write(sock, buff, BUF_LEN)!=BUF_LEN){
-				print("Erreur (envoi des données)\n");
+			if(write(sock, buff, strlen(buff)+1)!=strlen(buff)+1){
+				print("fail: write joueur\n");
 			}
 
 			fflush(stdout);
+
 		}else if(buff[0]=='A'){
+			// COMSERV souhaite la création d'un utilisateur
 			char protocole[2];
 			char name[32];
 			char pass[32];
+
+			// Récupération des informations
 			if(sscanf(buff,"%s %s %s", protocole, name, pass)==-1){
-				fprintf(stderr,"fail: scanf1");	exit(1);
+				fprintf(stderr,"fail: sscanf admin\n");
+				exit(1);
 			}
 
+			// Modification du buffer pour le renvoyer
 			buff[0]='a';
 			buff[3+strlen(name)]=createUser(conn,name,pass);
 			buff[4+strlen(name)]='\0';
+	
+			// 
 			printf("Envoi: '%s'\n", buff);
-			if(write(sock, buff, BUF_LEN)!=BUF_LEN){
-				print("Erreur (envoi des données)\n");
+			if(write(sock, buff, strlen(buff)+1)!=strlen(buff)+1){
+				fprintf(stderr,"fail: write admin\n");
 			}
 
 			fflush(stdout);
@@ -162,28 +226,33 @@ void reading(PGconn* conn, int sock){
 
 //// FONCTION PRINCIPALE
 int main(int argc, char const *argv[]){
+	// Vérification du nombre d'arguments
 	if(argc!=1){
-		fprintf(stderr, "usage: %s\n",argv[0]); exit(1);
+		fprintf(stderr, "usage: %s\n",argv[0]);
+		exit(1);
 	}
 
 	// Connexion à la base de données
 	const char *conninfo;
-	PGconn     *conn;
+	PGconn *conn;
 	conninfo="dbname = hashdb";
+
 	conn = PQconnectdb(conninfo);
 	if(PQstatus(conn) != CONNECTION_OK){
-		fprintf(stderr,"db fail: %s", PQerrorMessage(conn)); exit_nicely(conn);
+		fprintf(stderr,"db fail: %s\n", PQerrorMessage(conn)); PQfinish(conn); exit(1);
 	}else{
-		printf("Connecté OK.\n");
+		printf("Connecté à la base de données.\n");
 	}
 
 	// La table users existe-t-elle ?
 	if(PQresultStatus(PQexec(conn,"SELECT type FROM users LIMIT 1"))!=PGRES_TUPLES_OK){
-		// On la crée et on initialise l'admin.
+		// table users n'existe pas. Créons là, initialisons l'admin
 		initDb(conn);
-		printf("La table users n'existait pas et vient d'être créée et initialisée.");
+		printf("La table users n'existait pas et vient d'être créée et initialisée.\n");
 	}
 
+
+	// Préparation des données serveurs
 	unsigned int mon_port;
 	struct sockaddr_in mes_infos;
 	struct sockaddr_in client;
@@ -202,46 +271,60 @@ int main(int argc, char const *argv[]){
 	scanf("%6ud", &mon_port);
 	flush();
 	mes_infos.sin_port=htons(mon_port);
-	
+
+	printf("\nCréation du socket: ");	
 	// Création du socket
 	sock=socket(AF_INET, SOCK_STREAM, 0);
 	if(sock==-1){
-		fprintf(stderr,"Erreur socket : %s\n", msg_err); exit(-1);
+		fprintf(stderr,"\nFAIL SOCKET : %s\n", msg_err);
+		exit(1);
 	}
-	
+	printf("réussie.\nConnexion du socket: ");	
+
 	// Connexion du socket
 	if(bind(sock, (struct sockaddr*) &mes_infos, sizeof(mes_infos))<0){
-		fprintf(stderr,"Erreur bind : %s\n", msg_err); exit(-1);
+		fprintf(stderr,"\nFAIL BIND : %s\n", msg_err);
+		exit(1);
 	}
+	printf("réussie.\n");	
 	
+	// Ecoute du socket
 	if(listen(sock, 1)!=0){
-		fprintf(stderr,"Erreur listen : %s\n", msg_err); exit(-1);
+		fprintf(stderr,"\nFAIL LISTEN : %s\n", msg_err);
+		exit(-1);
 	}
-	
 
 	close_prgm=0;
-	while(close_prgm==0)
-	{
-		printf("En attente de la connexion de COMSERV sur le port %d...\n",
+	// Tant que la fermeture du programme n'est pas demandée
+	while(close_prgm==0){
+		printf("--- En attente de COMSERV sur le port %d ---\n",
 			ntohs(mes_infos.sin_port));
+
+		// En attente de la connexion de COMSERV
 		sock_stream=accept(sock, (struct sockaddr*) &client, &sizeof_client);
 		if(sock_stream<0){
-			fprintf(stderr,"Erreur -> accept : %s\n", msg_err); exit(-1);
+			fprintf(stderr,"\nFAIL ACCEPT : %s\n", msg_err);
+			exit(1);
 		}
 		
-		print("COMSERV connecté ");aff_info(&client);print("\n");
+		print("---> COMSERV connecté <---\n");
+		aff_info(&client);
+		print("\n\n");
 		
 		cont=1;
-		while(cont!=0)
-		{
+		while(cont!=0){
+			// On lit une demande
 			reading(conn, sock_stream);
 			sleep(0.1);
 		}
-		print("Deconnexion.");
+
+		print("\nXXX - Deconnexion de COMSERV.\n");
 		close(sock_stream);
 	}
-	print("Arret.");
 
+	print("XXX - Deconnexion de la base de données.\n");
 	PQfinish(conn);
+
+	print("Terminé.\n");
 	return 0;
 }
