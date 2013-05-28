@@ -22,86 +22,20 @@ gcc -Wall -o interface_graphique interface_graphique.c `sdl-config --cflags --li
 #include <SDL/SDL.h>
 #include <SDL/SDL_ttf.h>
 #include <pthread.h>
+int XInitThreads();
 
+//Liste des fichiers images nécessaires et des paramètres
+#include "interface_graphique_parametres.h"
+
+#define GUILLEMETS(x) #x
+#define FICHIER(chemin,nom_fichier) GUILLEMETS(chemin/nom_fichier)
+#define IMAGE(x) FICHIER(DOSSIER_IMAGES,x)
 
 #define true 1
 #define false 0
-typedef int bool;
+typedef short bool;
 
 
-//Liste des fichiers images nécessaires et des paramètres
-#define TITRE_DE_LA_FENETRE "Puissance 5 en réseau"
-#define FOND_ECRAN "Images/fond_ecran.bmp"
-#define LARGEUR_AVANT_LISTE 10
-#define LARGEUR_ENTRE_LISTE_MAP 10
-#define LARGEUR_APRES_MAP 10
-#define HAUTEUR_AVANT_LISTE 10
-#define HAUTEUR_AVANT_MAP 10
-#define HAUTEUR_APRES_MAP_LISTE 10
-
-#define POLICE "Images/police.ttf"
-#define TAILLE_POLICE 18
-#define COULEUR_JOUEUR_1 {0, 0, 255}
-#define COULEUR_JOUEUR_2 {0, 255, 0}
-#define COULEUR_JOUEUR_3 {255, 0, 0}
-#define COULEUR_JOUEUR_4 {0, 255, 255}
-#define COULEUR_JOUEUR_5 {255, 255, 0}
-#define COULEUR_JOUEUR_6 {255, 0, 255}
-#define COULEUR_JOUEUR_7 {127, 127, 127}
-#define COULEUR_JOUEUR_8 {0, 127, 127}
-#define COULEUR_JOUEUR_9 {127, 127, 0}
-#define LARGEUR_AVANT 3
-#define LARGEUR_MILIEU 2
-#define LARGEUR_APRES 3
-#define HAUTEUR_AVANT 2
-#define HAUTEUR_MILIEU 2
-#define HAUTEUR_APRES 2
-#define FOND_LISTE_JOUEURS "Images/fond_liste_joueurs.bmp"
-#define CADRE_G "Images/cadre_g.bmp"
-#define CADRE_I "Images/cadre_i.bmp"
-#define CADRE_D "Images/cadre_d.bmp"
-#define CADRE_S "Images/cadre_s.bmp"
-#define CADRE_COIN_SG "Images/cadre_coin_sg.bmp"
-#define CADRE_COIN_IG "Images/cadre_coin_ig.bmp"
-#define CADRE_COIN_ID "Images/cadre_coin_id.bmp"
-#define CADRE_COIN_SD "Images/cadre_coin_sd.bmp"
-
-#define FOND_MAP "Images/fond_map.bmp"
-#define BORDURE_CASE_G "Images/bordure_case_g.bmp"
-#define BORDURE_CASE_I "Images/bordure_case_i.bmp"
-#define BORDURE_CASE_D "Images/bordure_case_d.bmp"
-#define BORDURE_CASE_S "Images/bordure_case_s.bmp"
-#define BORDURE_INTERCASE_G "Images/bordure_intercase_g.bmp"
-#define BORDURE_INTERCASE_I "Images/bordure_intercase_i.bmp"
-#define BORDURE_INTERCASE_D "Images/bordure_intercase_d.bmp"
-#define BORDURE_INTERCASE_S "Images/bordure_intercase_s.bmp"
-#define BORDURE_COIN_SG "Images/bordure_coin_sg.bmp"
-#define BORDURE_COIN_IG "Images/bordure_coin_ig.bmp"
-#define BORDURE_COIN_ID "Images/bordure_coin_id.bmp"
-#define BORDURE_COIN_SD "Images/bordure_coin_sd.bmp"
-#define COLONNE "Images/colonne.bmp"
-#define LIGNE "Images/ligne.bmp"
-#define CROISEMENT "Images/croisement.bmp"
-
-#define FOND_MENU "Images/fond_menu.bmp"
-#define BOUTON_VALIDER_GRISE "Images/bouton_valider_grise.bmp"
-#define BOUTON_VALIDER_DISPO "Images/bouton_valider_dispo.bmp"
-#define HAUTEUR_APRES_VALIDER 10
-#define LARGEUR_APRES_VALIDER 10
-
-#define CASE_VIDE "Images/case_vide.bmp"
-#define CASE_COCHEE "Images/case_cochee.bmp"
-#define CASE_TONTOUR "Images/case_tontour.bmp"
-#define CASE_SELECTIONNEE "Images/case_selectionnee.bmp"
-#define CASE_JOUEUR_1 "Images/case_joueur_1.bmp"
-#define CASE_JOUEUR_2 "Images/case_joueur_2.bmp"
-#define CASE_JOUEUR_3 "Images/case_joueur_3.bmp"
-#define CASE_JOUEUR_4 "Images/case_joueur_4.bmp"
-#define CASE_JOUEUR_5 "Images/case_joueur_5.bmp"
-#define CASE_JOUEUR_6 "Images/case_joueur_6.bmp"
-#define CASE_JOUEUR_7 "Images/case_joueur_7.bmp"
-#define CASE_JOUEUR_8 "Images/case_joueur_8.bmp"
-#define CASE_JOUEUR_9 "Images/case_joueur_9.bmp"
 
 
 
@@ -153,6 +87,7 @@ SDL_Surface* bouton_valider_dispo = NULL;
 
 SDL_Surface* case_vide = NULL;
 SDL_Surface* case_cochee = NULL;
+SDL_Surface* case_derniere_jouee = NULL;
 SDL_Surface* case_tontour = NULL;
 SDL_Surface* case_selectionnee = NULL;
 SDL_Surface* case_joueur[9] = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
@@ -191,7 +126,7 @@ int nb_case_lig_map;
 
 
 //Prototypes et hiérarchie des fonctions (seules les fonctions non-indentées sont utilisables de l'extérieur.
-int initialisation(int, char**, int, int);
+int initialisation_sdl(int, char**, int, int);
   void demarrage();
     void chargement_images();
     void calcul_tailles();
@@ -207,8 +142,8 @@ int initialisation(int, char**, int, int);
   void init_menu(int);
   void affiche();
 
-int update(int, char*, char*);
-  int update_score(int, char*);
+int update_sdl(int, char*, char*);
+  int update_score(int, int, char*);
   //int draw_cases_map(char*);
   //void affiche()
 
@@ -216,11 +151,11 @@ void a_toi_de_jouer(int*, int*, char*);
   void* switch_message(void*);
   int check_mouse(bool, int*, int*, int, int, char*);
 
-void attendre_fermeture();
+void attendre_fermeture_sdl();
 
-void arret();
+void arret_sdl();
 
-void pause(); //TODO rm
+void pause_sdl(); //TODO rm
 
 
 
@@ -240,14 +175,19 @@ void pause(); //TODO rm
 //  - calcul des tailles de référence
 //  - création des zones et de la fenêtre
 //  - affichage de la fenêtre
-int initialisation(int nombre_joueurs, char** pseudos, int nombre_case_col_map, int nombre_case_lig_map)
+int initialisation_sdl(int nombre_joueurs, char** pseudos, int nombre_case_col_map, int nombre_case_lig_map)
 {
+  int i; //FIXME rm
   if (initialise)
   {
     fprintf(stderr, "Tentative de réinitialisation\n");
     return 0;
   }
+  printf("Démarrage de la sdl.\n");
   int res;
+  printf("nb joueurs : %d, nb_col_map : %d, nb_lig_map : %d\n", nombre_joueurs, nombre_case_col_map, nombre_case_lig_map);
+  for (i=0; i < nombre_joueurs; i++) printf("Pseudo joueur %d : %s\n", i, pseudos[i]);
+
   nb_joueurs = nombre_joueurs;
   nb_case_col_map = nombre_case_col_map;
   nb_case_lig_map = nombre_case_lig_map;
@@ -290,7 +230,7 @@ void demarrage()
   }
   atexit(TTF_Quit); // Si on rencontre un exit on arrête la SDL avant.
 
-  atexit(arret); // Si on rencontre un exit effacer toutes les allocations.
+  atexit(arret_sdl); // Si on rencontre un exit effacer toutes les allocations.
 
   chargement_images();
   calcul_tailles();
@@ -331,6 +271,7 @@ void chargement_images()
     && (croisement)
     && (case_vide)
     && (case_cochee)
+    && (case_derniere_jouee)
     && (case_tontour)
     && (case_selectionnee)
     && (case_joueur[0])
@@ -355,58 +296,59 @@ void chargement_images()
   //On charge les images, et on vérifie qu'elles ont été bien chargées.
   if (!(
 
-       (fond_ecran = SDL_LoadBMP(FOND_ECRAN))
-    && (fond_liste_joueurs = SDL_LoadBMP(FOND_LISTE_JOUEURS))
-    && (cadre_g = SDL_LoadBMP(CADRE_G))
-    && (cadre_i = SDL_LoadBMP(CADRE_I))
-    && (cadre_d = SDL_LoadBMP(CADRE_D))
-    && (cadre_s = SDL_LoadBMP(CADRE_S))
-    && (cadre_coin_sg = SDL_LoadBMP(CADRE_COIN_SG))
-    && (cadre_coin_ig = SDL_LoadBMP(CADRE_COIN_IG))
-    && (cadre_coin_id = SDL_LoadBMP(CADRE_COIN_ID))
-    && (cadre_coin_sd = SDL_LoadBMP(CADRE_COIN_SD))
-    && (fond_map = SDL_LoadBMP(FOND_MAP))
-    && (bordure_case_g = SDL_LoadBMP(BORDURE_CASE_G))
-    && (bordure_case_i = SDL_LoadBMP(BORDURE_CASE_I))
-    && (bordure_case_d = SDL_LoadBMP(BORDURE_CASE_D))
-    && (bordure_case_s = SDL_LoadBMP(BORDURE_CASE_S))
-    && (bordure_intercase_g = SDL_LoadBMP(BORDURE_INTERCASE_G))
-    && (bordure_intercase_i = SDL_LoadBMP(BORDURE_INTERCASE_I))
-    && (bordure_intercase_d = SDL_LoadBMP(BORDURE_INTERCASE_D))
-    && (bordure_intercase_s = SDL_LoadBMP(BORDURE_INTERCASE_S))
-    && (bordure_coin_sg = SDL_LoadBMP(BORDURE_COIN_SG))
-    && (bordure_coin_ig = SDL_LoadBMP(BORDURE_COIN_IG))
-    && (bordure_coin_id = SDL_LoadBMP(BORDURE_COIN_ID))
-    && (bordure_coin_sd = SDL_LoadBMP(BORDURE_COIN_SD))
-    && (colonne = SDL_LoadBMP(COLONNE))
-    && (ligne = SDL_LoadBMP(LIGNE))
-    && (croisement = SDL_LoadBMP(CROISEMENT))
-    && (case_vide = SDL_LoadBMP(CASE_VIDE))
-    && (case_cochee = SDL_LoadBMP(CASE_COCHEE))
-    && (case_tontour = SDL_LoadBMP(CASE_TONTOUR))
-    && (case_selectionnee = SDL_LoadBMP(CASE_SELECTIONNEE))
-    && (case_joueur[0] = SDL_LoadBMP(CASE_JOUEUR_1))
-    && (case_joueur[1] = SDL_LoadBMP(CASE_JOUEUR_2))
-    && (case_joueur[2] = SDL_LoadBMP(CASE_JOUEUR_3))
-    && (case_joueur[3] = SDL_LoadBMP(CASE_JOUEUR_4))
-    && (case_joueur[4] = SDL_LoadBMP(CASE_JOUEUR_5))
-    && (case_joueur[5] = SDL_LoadBMP(CASE_JOUEUR_6))
-    && (case_joueur[6] = SDL_LoadBMP(CASE_JOUEUR_7))
-    && (case_joueur[7] = SDL_LoadBMP(CASE_JOUEUR_8))
-    && (case_joueur[8] = SDL_LoadBMP(CASE_JOUEUR_9))
-    && (bouton_valider_grise = SDL_LoadBMP(BOUTON_VALIDER_GRISE))
-    && (bouton_valider_dispo = SDL_LoadBMP(BOUTON_VALIDER_DISPO))
+       (fond_ecran = SDL_LoadBMP(IMAGE(FOND_ECRAN)))
+    && (fond_liste_joueurs = SDL_LoadBMP(IMAGE(FOND_LISTE_JOUEURS)))
+    && (cadre_g = SDL_LoadBMP(IMAGE(CADRE_G)))
+    && (cadre_i = SDL_LoadBMP(IMAGE(CADRE_I)))
+    && (cadre_d = SDL_LoadBMP(IMAGE(CADRE_D)))
+    && (cadre_s = SDL_LoadBMP(IMAGE(CADRE_S)))
+    && (cadre_coin_sg = SDL_LoadBMP(IMAGE(CADRE_COIN_SG)))
+    && (cadre_coin_ig = SDL_LoadBMP(IMAGE(CADRE_COIN_IG)))
+    && (cadre_coin_id = SDL_LoadBMP(IMAGE(CADRE_COIN_ID)))
+    && (cadre_coin_sd = SDL_LoadBMP(IMAGE(CADRE_COIN_SD)))
+    && (fond_map = SDL_LoadBMP(IMAGE(FOND_MAP)))
+    && (bordure_case_g = SDL_LoadBMP(IMAGE(BORDURE_CASE_G)))
+    && (bordure_case_i = SDL_LoadBMP(IMAGE(BORDURE_CASE_I)))
+    && (bordure_case_d = SDL_LoadBMP(IMAGE(BORDURE_CASE_D)))
+    && (bordure_case_s = SDL_LoadBMP(IMAGE(BORDURE_CASE_S)))
+    && (bordure_intercase_g = SDL_LoadBMP(IMAGE(BORDURE_INTERCASE_G)))
+    && (bordure_intercase_i = SDL_LoadBMP(IMAGE(BORDURE_INTERCASE_I)))
+    && (bordure_intercase_d = SDL_LoadBMP(IMAGE(BORDURE_INTERCASE_D)))
+    && (bordure_intercase_s = SDL_LoadBMP(IMAGE(BORDURE_INTERCASE_S)))
+    && (bordure_coin_sg = SDL_LoadBMP(IMAGE(BORDURE_COIN_SG)))
+    && (bordure_coin_ig = SDL_LoadBMP(IMAGE(BORDURE_COIN_IG)))
+    && (bordure_coin_id = SDL_LoadBMP(IMAGE(BORDURE_COIN_ID)))
+    && (bordure_coin_sd = SDL_LoadBMP(IMAGE(BORDURE_COIN_SD)))
+    && (colonne = SDL_LoadBMP(IMAGE(COLONNE)))
+    && (ligne = SDL_LoadBMP(IMAGE(LIGNE)))
+    && (croisement = SDL_LoadBMP(IMAGE(CROISEMENT)))
+    && (case_vide = SDL_LoadBMP(IMAGE(CASE_VIDE)))
+    && (case_cochee = SDL_LoadBMP(IMAGE(CASE_COCHEE)))
+    && (case_derniere_jouee = SDL_LoadBMP(IMAGE(CASE_DERNIERE_JOUEE)))
+    && (case_tontour = SDL_LoadBMP(IMAGE(CASE_TONTOUR)))
+    && (case_selectionnee = SDL_LoadBMP(IMAGE(CASE_SELECTIONNEE)))
+    && (case_joueur[0] = SDL_LoadBMP(IMAGE(CASE_JOUEUR_1)))
+    && (case_joueur[1] = SDL_LoadBMP(IMAGE(CASE_JOUEUR_2)))
+    && (case_joueur[2] = SDL_LoadBMP(IMAGE(CASE_JOUEUR_3)))
+    && (case_joueur[3] = SDL_LoadBMP(IMAGE(CASE_JOUEUR_4)))
+    && (case_joueur[4] = SDL_LoadBMP(IMAGE(CASE_JOUEUR_5)))
+    && (case_joueur[5] = SDL_LoadBMP(IMAGE(CASE_JOUEUR_6)))
+    && (case_joueur[6] = SDL_LoadBMP(IMAGE(CASE_JOUEUR_7)))
+    && (case_joueur[7] = SDL_LoadBMP(IMAGE(CASE_JOUEUR_8)))
+    && (case_joueur[8] = SDL_LoadBMP(IMAGE(CASE_JOUEUR_9)))
+    && (bouton_valider_grise = SDL_LoadBMP(IMAGE(BOUTON_VALIDER_GRISE)))
+    && (bouton_valider_dispo = SDL_LoadBMP(IMAGE(BOUTON_VALIDER_DISPO)))
   ))
   {
     fprintf(stderr, "Erreur de chargement d'une image : %s\n", SDL_GetError());
-    arret();
+    arret_sdl();
     exit(EXIT_FAILURE);
   }
 
   if (!(police = TTF_OpenFont(POLICE, TAILLE_POLICE)))
   {
     fprintf(stderr, "Erreur de chargement de la police : %s\n", TTF_GetError());
-    arret();
+    arret_sdl();
     exit(EXIT_FAILURE);    
   }
 }
@@ -430,8 +372,8 @@ void calcul_tailles()
   int h_bordure_s[4] = {bordure_coin_sd->h, bordure_case_s->h, bordure_intercase_s->h, bordure_coin_sg->h};
   int h_intercase[4] = {bordure_intercase_g->h, bordure_intercase_d->h, ligne->h, croisement->h};
   int l_intercase[4] = {bordure_intercase_i->w, bordure_intercase_s->w, colonne->w, croisement->w};
-  int h_case[16] = {case_vide->h, case_cochee->h, case_tontour->h, case_selectionnee->h, case_joueur[0]->h, case_joueur[1]->h, case_joueur[2]->h, case_joueur[3]->h, case_joueur[4]->h, case_joueur[5]->h, case_joueur[6]->h, case_joueur[7]->h, case_joueur[8]->h, bordure_case_g->h, bordure_case_d->h, colonne->h};
-  int l_case[16] = {case_vide->w, case_cochee->w, case_tontour->w, case_selectionnee->h, case_joueur[0]->w, case_joueur[1]->w, case_joueur[2]->w, case_joueur[3]->w, case_joueur[4]->w, case_joueur[5]->w, case_joueur[6]->w, case_joueur[7]->w, case_joueur[8]->w, bordure_case_i->w, bordure_case_s->w, ligne->w};
+  int h_case[17] = {case_vide->h, case_cochee->h, case_derniere_jouee->h, case_tontour->h, case_selectionnee->h, case_joueur[0]->h, case_joueur[1]->h, case_joueur[2]->h, case_joueur[3]->h, case_joueur[4]->h, case_joueur[5]->h, case_joueur[6]->h, case_joueur[7]->h, case_joueur[8]->h, bordure_case_g->h, bordure_case_d->h, colonne->h};
+  int l_case[17] = {case_vide->w, case_cochee->w, case_derniere_jouee->w, case_tontour->w, case_selectionnee->h, case_joueur[0]->w, case_joueur[1]->w, case_joueur[2]->w, case_joueur[3]->w, case_joueur[4]->w, case_joueur[5]->w, case_joueur[6]->w, case_joueur[7]->w, case_joueur[8]->w, bordure_case_i->w, bordure_case_s->w, ligne->w};
 
   //Initialisation des variables et vérification que les tailles sont compatibles
   //  En cas d'erreur, l'indice est celui d'un des tableau ci-dessus (le tableau correspondant à l'erreur.
@@ -443,7 +385,7 @@ void calcul_tailles()
     if (1 != un[i])
     {
       fprintf(stderr,"Problème de compatibilité des épaisseurs de cadre.\nTaille attendue : 1px, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", un[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
@@ -454,7 +396,7 @@ void calcul_tailles()
     if (largeur_cadre_g != l_cadre_g[i])
     {
       fprintf(stderr,"Problème de compatibilité des largeurs de cadre gauche.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", largeur_cadre_g, l_cadre_g[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
@@ -465,7 +407,7 @@ void calcul_tailles()
     if (hauteur_cadre_i != h_cadre_i[i])
     {
       fprintf(stderr,"Problème de compatibilité des hauteurs de cadre inférieure.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", hauteur_cadre_i, h_cadre_i[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
@@ -476,7 +418,7 @@ void calcul_tailles()
     if (largeur_cadre_d != l_cadre_d[i])
     {
       fprintf(stderr,"Problème de compatibilité des largeurs de cadre droite.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", largeur_cadre_d, l_cadre_d[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
@@ -487,7 +429,7 @@ void calcul_tailles()
     if (hauteur_cadre_s != h_cadre_s[i])
     {
       fprintf(stderr,"Problème de compatibilité des hauteurs de cadre supérieure.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", hauteur_cadre_s, h_cadre_s[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
@@ -498,7 +440,7 @@ void calcul_tailles()
     if (largeur_bordure_g != l_bordure_g[i])
     {
       fprintf(stderr,"Problème de compatibilité des largeurs de bordure gauche.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", largeur_bordure_g, l_bordure_g[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
@@ -509,7 +451,7 @@ void calcul_tailles()
     if (hauteur_bordure_i != h_bordure_i[i])
     {
       fprintf(stderr,"Problème de compatibilité des hauteurs de bordure inférieure.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", hauteur_bordure_i, h_bordure_i[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
@@ -520,7 +462,7 @@ void calcul_tailles()
     if (largeur_bordure_d != l_bordure_d[i])
     {
       fprintf(stderr,"Problème de compatibilité des largeurs de bordure droite.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", largeur_bordure_d, l_bordure_d[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
@@ -531,7 +473,7 @@ void calcul_tailles()
     if (hauteur_bordure_s != h_bordure_s[i])
     {
       fprintf(stderr,"Problème de compatibilité des hauteurs de bordure supérieure.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", hauteur_bordure_s, h_bordure_s[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
@@ -542,7 +484,7 @@ void calcul_tailles()
     if (hauteur_intercase != h_intercase[i])
     {
       fprintf(stderr,"Problème de compatibilité des hauteurs d'intercase.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", hauteur_intercase, h_intercase[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
@@ -553,29 +495,29 @@ void calcul_tailles()
     if (largeur_intercase != l_intercase[i])
     {
       fprintf(stderr,"Problème de compatibilité des largeurs d'intercase.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", largeur_intercase, l_intercase[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
 
   hauteur_case = h_case[0];
-  for(i=1; i<16; i++)
+  for(i=1; i<17; i++)
   {
     if (hauteur_case != h_case[i])
     {
       fprintf(stderr,"Problème de compatibilité des hauteurs de case.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", hauteur_case, h_case[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
 
   largeur_case = l_case[0];
-  for(i=1; i<16; i++)
+  for(i=1; i<17; i++)
   {
     if (largeur_case != l_case[i])
     {
       fprintf(stderr,"Problème de compatibilité des largeurs de case.\nTaille attendue : %dpx, taille effective : %dpx\nIndice : %d. (cf code source pour le traitement de l'erreur)\n", largeur_case, l_case[i], i);
-      arret();
+      arret_sdl();
       exit(EXIT_FAILURE);
     }
   }
@@ -584,7 +526,7 @@ void calcul_tailles()
   if (largeur_bouton_valider != bouton_valider_dispo->w)
   {
     fprintf(stderr,"Problème de compatibilité des largeurs du bouton valider.\nTaille du bouton grisé : %dpx, taille du bouton dispo : %dpx\n", largeur_bouton_valider, bouton_valider_dispo->w);
-    arret();
+    arret_sdl();
     exit(EXIT_FAILURE);
   }
 
@@ -592,7 +534,7 @@ void calcul_tailles()
   if (hauteur_bouton_valider != bouton_valider_dispo->h)
   {
     fprintf(stderr,"Problème de compatibilité des hauteurs du bouton valider.\nTaille du bouton grisé : %dpx, taille du bouton dispo : %dpx\n", hauteur_bouton_valider, bouton_valider_dispo->h);
-    arret();
+    arret_sdl();
     exit(EXIT_FAILURE);
   }
 }
@@ -679,7 +621,7 @@ int init_zones(char** pseudos)
     if (!ecran) // Si l'ouverture a échoué, on le note et on arrête
     {
         fprintf(stderr, "Impossible de charger le mode vidéo : %s\n", SDL_GetError());
-        arret();
+        arret_sdl();
         exit(EXIT_FAILURE);
     }
 
@@ -1063,6 +1005,9 @@ int draw_cases_map(char* desc_map)
         case 'X':
           case_courante = case_cochee;
           break;
+        case 'D':
+          case_courante = case_derniere_jouee;
+          break;
         case '1':
           case_courante = case_joueur[0];
           break;
@@ -1167,7 +1112,7 @@ int draw_cases_map(char* desc_map)
 void init_menu(int hauteur_menu)
 {
   SDL_Rect position;
-  SDL_Surface* fond_menu = SDL_LoadBMP(FOND_MENU);
+  SDL_Surface* fond_menu = SDL_LoadBMP(IMAGE(FOND_MENU));
 
   menu = SDL_CreateRGBSurface(SDL_HWSURFACE, fond_menu->w, hauteur_menu, 32, 0, 0, 0, 0);
 
@@ -1214,9 +1159,12 @@ void affiche()
 
 
 
-int update(int joueur_a_updater, char* nouveau_score, char* desc_nouvelle_map)
+int update_sdl(int joueur_dont_cest_le_tour, char* nouveau_score, char* desc_nouvelle_map)
 {
   int res = 0;
+  int joueur_a_updater = joueur_dont_cest_le_tour - 1;
+  if (joueur_a_updater < 0) joueur_a_updater = nb_joueurs - 1;
+  printf("Joueur dont c'est le tour (indice) : %d   Joueur a updater (indice) : %d\n", joueur_dont_cest_le_tour, joueur_a_updater);
 
   if (!initialise)
   {
@@ -1224,7 +1172,7 @@ int update(int joueur_a_updater, char* nouveau_score, char* desc_nouvelle_map)
     return (-100);
   }
 
-  res += update_score(joueur_a_updater, nouveau_score);
+  res += update_score(joueur_a_updater, joueur_dont_cest_le_tour, nouveau_score);
   res += draw_cases_map(desc_nouvelle_map);
   affiche();
 
@@ -1236,9 +1184,9 @@ int update(int joueur_a_updater, char* nouveau_score, char* desc_nouvelle_map)
 
 
 
-int update_score(int numero_joueur_a_updater, char* nouveau_score)
+int update_score(int joueur_a_updater, int joueur_dont_cest_le_tour, char* nouveau_score)
 {
-  int i, j, joueur_a_updater = numero_joueur_a_updater - 1;
+  int i, j;
   char* score_a_updater;
 
   SDL_Color couleur_joueur[9] = {COULEUR_JOUEUR_1, COULEUR_JOUEUR_2, COULEUR_JOUEUR_3, COULEUR_JOUEUR_4, COULEUR_JOUEUR_5, COULEUR_JOUEUR_6, COULEUR_JOUEUR_7, COULEUR_JOUEUR_8, COULEUR_JOUEUR_9};
@@ -1269,7 +1217,7 @@ int update_score(int numero_joueur_a_updater, char* nouveau_score)
   }
   else
   {
-    fprintf(stderr, "update_score : le score passé en paramètre ne fait ni 1 ni 2 caractères, et n'est donc pas valide.");
+    fprintf(stderr, "update_score : le score \"%s\" passé en paramètre ne fait ni 1 ni 2 caractères, et n'est donc pas valide.\n", nouveau_score);
     return (-20);
   }
 
@@ -1277,7 +1225,7 @@ int update_score(int numero_joueur_a_updater, char* nouveau_score)
   scores_affiches[joueur_a_updater] = TTF_RenderText_Blended(police, scores[joueur_a_updater], couleur_joueur[joueur_a_updater]);
 
   draw_cadre_liste_joueurs();
-  draw_scores_liste_joueurs(joueur_a_updater);
+  draw_scores_liste_joueurs(joueur_dont_cest_le_tour);
   return 0;
 }
 
@@ -1296,6 +1244,12 @@ void a_toi_de_jouer(int* res_x, int* res_y, char* desc_map)
   int continuer = 1;
   bool selection = false;
 
+  if (!initialise)
+  {
+    fprintf(stderr, "Lancement d'a_toi_de_jouer sans initialisation.\n");
+    return;
+  }
+
   pthread_t clignote;
   SDL_Rect position;
   SDL_Event event;
@@ -1311,7 +1265,7 @@ void a_toi_de_jouer(int* res_x, int* res_y, char* desc_map)
     switch(event.type)
     {
       case SDL_QUIT:
-        arret();
+        arret_sdl();
         exit(EXIT_SUCCESS);
         break;
       case SDL_MOUSEBUTTONUP:
@@ -1397,7 +1351,7 @@ int check_mouse(bool selection, int* res_x, int* res_y, int souris_x, int souris
       if (i >= nb_case_col_map)
       {
         fprintf(stderr, "check_mouse : cas non prévu.");
-        arret();
+        arret_sdl();
         exit(EXIT_FAILURE);
       }
       balayage_x += largeur_case;
@@ -1418,7 +1372,7 @@ int check_mouse(bool selection, int* res_x, int* res_y, int souris_x, int souris
       if (j >= nb_case_lig_map)
       {
         fprintf(stderr, "check_mouse : cas non prévu.");
-        arret();
+        arret_sdl();
         exit(EXIT_FAILURE);
       }
       balayage_y += hauteur_case;
@@ -1435,8 +1389,8 @@ int check_mouse(bool selection, int* res_x, int* res_y, int souris_x, int souris
 
     if (selection)
     {
-      position.x = largeur_bordure_g + (*res_x - 1) * (largeur_case + largeur_intercase);
-      position.y = hauteur_bordure_s + (*res_y - 1) * (hauteur_case + hauteur_intercase);
+      position.x = largeur_bordure_g + (*res_x) * (largeur_case + largeur_intercase);
+      position.y = hauteur_bordure_s + (*res_y) * (hauteur_case + hauteur_intercase);
       SDL_BlitSurface(case_vide, NULL, map, &position);
     }
 
@@ -1446,8 +1400,8 @@ int check_mouse(bool selection, int* res_x, int* res_y, int souris_x, int souris
 
     affiche();
 
-    *res_x = i;
-    *res_y = j;
+    *res_x = i - 1;
+    *res_y = j - 1;
     return 0;
   }
 
@@ -1468,20 +1422,51 @@ int check_mouse(bool selection, int* res_x, int* res_y, int souris_x, int souris
 
 
 
-void attendre_fermeture()
+void attendre_fermeture_sdl()
 {
-    SDL_Event event;
+  if (!initialise)
+  {
+    fprintf(stderr, "Lancement de attendre_fermeture_sdl sans initialisation.\n");
+    return;
+  }
+
+  SDL_Event event;
   
-    while (1)
+  while (1)
     {
         SDL_WaitEvent(&event);
         switch(event.type)
         {
             case SDL_QUIT:
-              arret();
+              arret_sdl();
               exit(EXIT_SUCCESS);
         }
     }
+}
+
+
+
+
+void attendre_clic_croix()
+{
+  if (!initialise)
+  {
+    fprintf(stderr, "Lancement de attendre_clic_croix sans initialisation.\n");
+    return;
+  }
+
+  bool continuer = true;
+  SDL_Event event;
+
+  while (continuer)
+  {
+    SDL_WaitEvent(&event);
+    switch(event.type)
+    {
+      case SDL_QUIT:
+        continuer = false;
+    }
+  }
 }
 
 
@@ -1492,8 +1477,7 @@ void attendre_fermeture()
 
 
 
-
-void arret()
+void arret_sdl()
 {
   if (!initialise) return;
 
@@ -1526,36 +1510,4 @@ void arret()
   TTF_Quit();
   SDL_Quit();
   initialise = false;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//TODO Deleter cette fonction
-void pause()
-{
-    int continuer = 1;
-    SDL_Event event;
-  
-    while (continuer)
-    {
-        SDL_WaitEvent(&event);
-        switch(event.type)
-        {
-            case SDL_QUIT:
-                continuer = 0;
-        }
-    }
 }

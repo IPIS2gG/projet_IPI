@@ -1,11 +1,10 @@
-int initialisation(int, char**, int, int);
+int initialisation_sdl(int, char**, int, int);
 
-int update(int, char*, char*);
+int update_sdl(int, char*, char*);
 
 void a_toi_de_jouer(int*, int*, char*);
 
-void attendre_fermeture();
+void attendre_fermeture_sdl();
+void attendre_clic_croix();
 
-void arret();
-
-void pause(); //TODO rm
+void arret_sdl();

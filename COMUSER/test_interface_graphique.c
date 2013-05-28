@@ -30,8 +30,8 @@ int main(int argc, char** argv)
   pseudos[4] = "Unidouille";
   pseudos[5] = "Nocta";
   pseudos[6] = "";
-  pseudos[7] = "aoa";
-  pseudos[8] = "ALEXISES";
+  pseudos[7] = "éééééé";
+  pseudos[8] = "YOPYOPYOP";
 
   /*
   *pseudos = malloc(10 * sizeof(char));
@@ -105,21 +105,22 @@ int main(int argc, char** argv)
   desc_map[23] = '3';
   desc_map[45] = '4';
   desc_map[52] = '5';
-  //desc_map[53] = '6';
-  //desc_map[63] = '7';
-  //desc_map[68] = '8';
-  //desc_map[70] = '9';
+  desc_map[53] = '6';
+  desc_map[63] = '7';
+  desc_map[68] = '8';
+  desc_map[70] = '9';
   desc_map[72] = 'X';
+  desc_map[83] = 'D';
 
 
 
 
   //Initialisation (chargement de la SDL, chargement des surfaces et de la police de référence, calcul des tailles de référence, création des zones et de la fenêtre, affichage de la fenêtre)
-  initialisation(nb_joueurs_recu, pseudos, nb_case_col_map_recu, nb_case_lig_map_recu);
+  initialisation_sdl(nb_joueurs_recu, pseudos, nb_case_col_map_recu, nb_case_lig_map_recu);
 
 
 
-  pause();
+  attendre_clic_croix();
 
 
 
@@ -129,30 +130,30 @@ int main(int argc, char** argv)
 
 
   //Mise à jour avec la map d'exemple
-  update(1, "5", desc_map);
-  update(2, "15", desc_map);
+  update_sdl(1, "5", desc_map);
+  update_sdl(2, "15", desc_map);
 
   a_toi_de_jouer(&x, &y, desc_map);
 
-  desc_map[(((y - 1) * nb_case_col_map_recu) + x) - 1] = 'X';
+  desc_map[((y * nb_case_col_map_recu) + x)] = 'D';
 
-  update(3, "15", desc_map);
-
-  a_toi_de_jouer(&x, &y, desc_map);
-
-  desc_map[(((y - 1) * nb_case_col_map_recu) + x) - 1] = 'X';
-
-  update(3, "6", desc_map);
-
-  pause();
+  update_sdl(3, "15", desc_map);
 
   a_toi_de_jouer(&x, &y, desc_map);
 
-  desc_map[(((y - 1) * nb_case_col_map_recu) + x) - 1] = 'X';
+  desc_map[((y * nb_case_col_map_recu) + x)] = 'X';
 
-  update(9, "79", desc_map);
+  update_sdl(3, "6", desc_map);
 
-  attendre_fermeture();
+  attendre_clic_croix();
+
+  a_toi_de_jouer(&x, &y, desc_map);
+
+  desc_map[((y * nb_case_col_map_recu) + x)] = 'D';
+
+  update_sdl(9, "79", desc_map);
+
+  attendre_fermeture_sdl();
 
 
 
@@ -160,7 +161,7 @@ int main(int argc, char** argv)
   //Libération de la mémoire des surfaces de référence et arrêt de la SDL
   //for(i=0; i<9; i++) free(pseudos[i]);
   free(desc_map);
-  arret();
+  arret_sdl();
 
 
   return EXIT_SUCCESS;

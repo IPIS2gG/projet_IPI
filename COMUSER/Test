@@ -1,0 +1,1 @@
+../Tests/GTK/comgen >/dev/null 2>/dev/null & ./comuser
