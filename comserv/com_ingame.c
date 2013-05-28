@@ -42,6 +42,7 @@ void launch_game(struct param_partie* infos)
 	bool cont_waiting; //attends la réponse du joueur courant
 	
 	fd_set readfs; //ensembles des fd lu par select
+	fd_set writefs;
 	int max_fs=-1; //necessaire pour select
 	
 	int ret; //retour de select
@@ -80,6 +81,9 @@ void launch_game(struct param_partie* infos)
 	{
 		write(tab_stream[i], buff, n);
 	}
+	print("-->");
+	write(1, buff, n);
+	printf("<-- (%d char)\n", n);fflush(stdout);
 	free(buff);
 	
 	print("Initialisation de la partie .... ");
@@ -101,8 +105,15 @@ void launch_game(struct param_partie* infos)
 		sprintf(buff, "T %d %d %s", joueur_courant, 
 									getscore(part, joueur_precedant),
 									aff_map);
+		
+		
 		free(aff_map);
 		n=strlen(buff)+1;
+		
+		print("-->");
+		write(1, buff, n);
+		printf("<-- (%d char)\n", n);fflush(stdout);
+		
 		for(i=0; i<tab_stream.size(); ++i)
 		{
 			write(tab_stream[i], buff, n);
@@ -113,9 +124,11 @@ void launch_game(struct param_partie* infos)
 		{
 			//écoute des gens
 			FD_ZERO(&readfs);
+			FD_ZERO(&writefs);
 			for(i=0; i<tab_stream.size(); ++i) //on écoutera aussi l'admin
 			{
 				FD_SET(tab_stream[i], &readfs);
+				FD_SET(tab_stream[i], &writefs);
 			}
 		
 			printf("Attente de communication (réponse attendue de [%s - %d])\n",
@@ -132,11 +145,16 @@ void launch_game(struct param_partie* infos)
 			if(FD_ISSET(tab_stream[joueur_courant], &readfs))
 			{
 				//joueur courant a parlé
-				cont_waiting=false;
-				printf("Joueur courant [%s - %d] (stream %d) a parlé -->",
-												tab_pseudo[joueur_courant], joueur_courant, tab_stream[i]);
 				fflush(stdout);
-				r=read(tab_stream[i], buff_read, 50);
+				r=read(tab_stream[joueur_courant], buff_read, 50);
+				if(r<=0)
+				{
+					printf("Erreur : client (%d) déconnecté\n", tab_stream[joueur_courant]);
+					exit(-1);
+				}
+				printf("Joueur courant [%s - %d] (stream %d) a parlé -->",
+												tab_pseudo[joueur_courant],
+												joueur_courant, tab_stream[joueur_courant]);
 				write(1, buff_read, r);
 				printf("<-- (%d char)\n", r);
 				fflush(stdout);
@@ -152,7 +170,7 @@ void launch_game(struct param_partie* infos)
 					printf("Player joue en x=%d y=%d\n", x, y);
 
 					ret_play=play(part, x,y,joueur_courant);
-					printf("Gestpart répond %d\n", ret);
+					printf("Gestpart répond %d\n", ret_play);
 					fflush(stdout);
 					switch(ret_play)
 					{
@@ -164,6 +182,11 @@ void launch_game(struct param_partie* infos)
 							free(aff_map);
 							print("Envoi de 'M map' au joueur courant\n");
 							write(tab_stream[joueur_courant], buff, strlen(buff)+1);
+							
+							print("-->");
+							write(1, buff, strlen(buff)+1);
+							printf("<-- (%d char)\n", strlen(buff)+1);fflush(stdout);
+							
 							//on laisse cont_waiting=true -> on attend toujours le même joueur
 							break;
 						case 0 :
@@ -174,7 +197,7 @@ void launch_game(struct param_partie* infos)
 						default :
 							print("Coup correct\n");
 							joueur_precedant=joueur_courant;
-							joueur_courant=ret;
+							joueur_courant=ret_play;
 							printf("Au joueur [%s - %d] de jouer !\n", tab_pseudo[joueur_courant],
 													tab_stream[joueur_courant]);
 							cont_waiting=false;
@@ -189,9 +212,14 @@ void launch_game(struct param_partie* infos)
 				{
 					if(FD_ISSET(tab_stream[i], &readfs))
 					{
-						printf("   ERREUR : socket %d a parlé -->", tab_stream[i]);
 						fflush(stdout);
 						r=read(tab_stream[i], buff_read, 50);
+						if(r<=0)
+						{
+							printf("Erreur : client déconnecté (%d)\n", tab_stream[i]);
+							exit(-1);
+						}
+						printf("   ERREUR : socket %d a parlé -->", tab_stream[i]);
 						write(1, buff_read, r);
 						printf("<-- (%d char)\n", r);
 						fflush(stdout);
@@ -203,14 +231,7 @@ void launch_game(struct param_partie* infos)
 	}
 	free(buff);
 	//determinantion du gagnant
-	joueur_gagnant=1;
-	for(i=2; i<=nb_joueur; ++i)
-	{
-		if(getscore(part, i)>getscore(part, joueur_gagnant))
-		{
-			joueur_gagnant=i;
-		}
-	}
+	joueur_gagnant=getvainqueur(part);
 	aff_map=getmap(part);
 	//envoi à tous des scores finaux [BOURINAGE]
 	buff=(char*) calloc(2+18+nb_joueur*5+w*h+1, sizeof(char));
@@ -227,6 +248,9 @@ void launch_game(struct param_partie* infos)
 	{
 		write(tab_stream[i], buff, n);
 	}
+	print("-->");
+	write(1, buff, n);
+	printf("<-- (%d char)\n", n);fflush(stdout);
 	free(buff);
 	
 	print("Jeu terminé\n");

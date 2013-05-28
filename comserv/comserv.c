@@ -549,6 +549,7 @@ void* thread_connection_client(void * param)
 	{
 		print("   Fin de connexion ");
 		aff_thread_info(id, &client);
+		print("\n");
 	
 		close(sock_client_stream); //fermeture de la connexion
 		tab_thread->erase(id); //on s'enlève de la table des threads

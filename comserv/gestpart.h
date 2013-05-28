@@ -7,6 +7,7 @@ int play(partie *, int x, int y, int joueur);
 void destroy(partie *);
 
 char * getmap(partie *);
+//alloué dynamiquement
 
 int getscore(partie *, int joueur);
 
