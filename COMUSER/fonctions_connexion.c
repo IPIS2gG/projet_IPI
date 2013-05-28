@@ -91,7 +91,6 @@ void connexion (struct toutes_les_fenetres* m, char* login, char* mdp)
     gdk_threads_leave();
     g_thread_exit(NULL);
   }
-  gdk_threads_leave(); //FIXME
 
 
   gtk_widget_hide (m->fenetre_principale.adresse);
@@ -116,6 +115,7 @@ void connexion (struct toutes_les_fenetres* m, char* login, char* mdp)
     m->fenetre_connexion.open = 0;
     gtk_widget_show_all (m->fenetre_principale.adresse);
     m->fenetre_principale.open = 1;
+    gdk_threads_leave();
     g_thread_exit(NULL);
   }
   else printf("Socket créé.\n");
@@ -133,6 +133,7 @@ void connexion (struct toutes_les_fenetres* m, char* login, char* mdp)
     m->fenetre_connexion.open = 0;
     gtk_widget_show_all (m->fenetre_principale.adresse);
     m->fenetre_principale.open = 1;
+    gdk_threads_leave();
     g_thread_exit(NULL);
 	}
   else printf("Socket connecté.\n");
@@ -144,6 +145,7 @@ void connexion (struct toutes_les_fenetres* m, char* login, char* mdp)
 
   gtk_label_set_text(m->fenetre_connexion.instruction, "Connexion réussie !\nTentative d'authentification.\nVeuillez patienter s'il vous plaît...");
 
+  gdk_threads_leave();
   free(message_erreur);
 }
 

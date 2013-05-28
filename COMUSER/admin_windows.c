@@ -94,8 +94,6 @@ void creer_fenetre_pre_game (struct toutes_les_fenetres* m)
 		//avant de détruire la fenêtre
 	//####################
 
-  gdk_threads_enter();
-
 	window=gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_MOUSE);
 	gtk_window_set_title(GTK_WINDOW(window), "Admin : création partie");
@@ -225,8 +223,6 @@ void creer_fenetre_pre_game (struct toutes_les_fenetres* m)
 								G_CALLBACK(signal_create_game),
 								 m);
 
-  gdk_threads_leave();
-
   //Enregistrement de la fenêtre dans la structure globale.
   m->fenetre_pre_game.adresse = window;
   m->fenetre_pre_game.open = false;
@@ -246,7 +242,7 @@ void signal_create_user(GtkWidget* widget, gpointer data)
   int i;
 
 
-  gdk_threads_enter();
+
 	char* login = (char*) gtk_entry_get_text(m->fenetre_pre_game.param_create_user.entry_login);
 	char* mdp = (char*) gtk_entry_get_text(m->fenetre_pre_game.param_create_user.entry_mdp);
 
@@ -265,7 +261,7 @@ void signal_create_user(GtkWidget* widget, gpointer data)
 
 	message = concat_string_gfree(concat_string_gfree(concat_string_gfree(concat_string("Création de l'utilisateur ", login), " (mdp : "), mdp), ").");
 	gtk_label_set_text(m->fenetre_pre_game.param_create_user.label_err, message);
-  gdk_threads_leave();
+
 	creer_utilisateur(m, (char*) login, (char*) mdp);
 }
 
@@ -279,8 +275,6 @@ void signal_create_game(GtkWidget* widget, gpointer data)
 	int nbj;
 	GtkWidget* label_err=param->label_err;
 
-  gdk_threads_enter();
-
 	w=atoi(gtk_entry_get_text(GTK_ENTRY(param->entry_w)));
 	h=atoi(gtk_entry_get_text(GTK_ENTRY(param->entry_h)));
 	nbj=atoi(gtk_entry_get_text(GTK_ENTRY(param->entry_nbj)));
@@ -293,8 +287,6 @@ void signal_create_game(GtkWidget* widget, gpointer data)
 	{	gtk_label_set_text(GTK_LABEL(label_err), "Le nombre de joueurs doit être >=2"); return ;}
 	if(nbj>9)
 	{	gtk_label_set_text(GTK_LABEL(label_err), "Le nombre de joueurs doit être <=9"); return ;}
-
-  gdk_threads_leave();
 
 	printf("Création de la partie : %dx%d , %d joueurs max\n", w, h, nbj);
 

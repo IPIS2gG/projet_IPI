@@ -3,8 +3,10 @@
 void attente_validation_joueur (struct toutes_les_fenetres* m)
 {
   char* message_erreur = concat_string("Erreur :","\n   ");
-
-  gtk_label_set_markup(m->fenetre_connexion.instruction, "Authentification réussie !\nAttente de validation par l'Administrateur.\nVeuillez patienter s'il vous plaît...");
+  
+  gdk_threads_enter();
+  gtk_label_set_text(m->fenetre_connexion.instruction, "Authentification réussie !\nAttente de validation par l'Administrateur.\nVeuillez patienter s'il vous plaît...");
+  gdk_threads_leave();
 
   //Réception du message de validation :
   attendre_et_dechiffrer_message (m, 'J');
@@ -49,7 +51,9 @@ void attente_validation_joueur (struct toutes_les_fenetres* m)
 
 void attente_debut_partie_joueur (struct toutes_les_fenetres* m)
 {
+  gdk_threads_enter();
   gtk_label_set_markup(m->fenetre_connexion.instruction, "Validation par l'administrateur réussie !\nAttente de la création de la partie.\nVeuillez patienter s'il vous plaît...");
+  gdk_threads_leave();
 
 
   //Réception du message de création de la partie :

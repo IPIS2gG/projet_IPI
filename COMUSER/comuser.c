@@ -202,9 +202,7 @@ void* authentification (void* arg)
 
 void arret (GtkWidget *p_widget, gpointer user_data)
 {
-  gdk_threads_enter();
   gtk_main_quit();
-  gdk_threads_leave();
 
   /* Parametres inutilises */
   (void)p_widget;

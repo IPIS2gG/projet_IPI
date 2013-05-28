@@ -13,14 +13,14 @@ void traitement_admin (struct toutes_les_fenetres* m)
   m->fenetre_pre_game.open = true;
 }
 
+
+
 void creer_utilisateur (struct toutes_les_fenetres* m, const char* login, const char* mdp)
 {
   char* message_envoye;
   int i;
 
-  gdk_threads_enter();
   gtk_widget_set_sensitive (m->fenetre_pre_game.param_create_user.bouton, FALSE);
-  gdk_threads_leave();
 
   printf("Envoi de demande de création de l'utilisateur %s avec le mot de passe %s\n", login, mdp);
   message_envoye = concat_string(concat_string(concat_string("A ", login), " "), mdp);
@@ -32,6 +32,7 @@ void creer_utilisateur (struct toutes_les_fenetres* m, const char* login, const 
 
   m->fenetre_pre_game.param_create_user.thread = g_thread_new("Attente validation création utilisateur", attendre_validation_creation_utilisateur, m);
 }
+
 
 
 void* attendre_validation_creation_utilisateur (void* arg)
@@ -101,13 +102,11 @@ void creer_jeu (struct toutes_les_fenetres* m, int hauteur, int largeur, int nom
   printf("Commande 'création de partie' envoyée : %s\n", message_envoye); //FIXME Le mdp apparait en clair dans les logs (et dans le protocole)
   free(message_envoye);
 
-  gdk_threads_enter();
   gtk_widget_hide (m->fenetre_pre_game.adresse);
   m->fenetre_pre_game.open = false;
 
   gtk_widget_show_all(m->fenetre_accept_joueur.adresse);
   m->fenetre_accept_joueur.open = true;
-  gdk_threads_leave();
 
   g_thread_new("Attente de la réception de demandes de joueurs", attendre_reception_demandes_joueurs, m);
 }
@@ -126,7 +125,6 @@ void* attendre_reception_demandes_joueurs (void* arg)
     switch (m->mess.commande)
     {
       case 'P' :
-        printf("_______________TEST SOCK ardj : %d_____________\n", m->sock);
         printf("\nCommande de demande d'acceptation du joueur %s (id : %d)\n", m->mess.pseudo, m->mess.id);
 
         add_demande(m, m->fenetre_accept_joueur.Vbox_layout, m->fenetre_accept_joueur.label_aff_accepted, m->mess.pseudo, m->mess.id);
