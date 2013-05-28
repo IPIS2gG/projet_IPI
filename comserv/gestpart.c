@@ -25,13 +25,13 @@ partie *init(int l, int h, int nbjoueurs)
 {
   // verifier l, h et nbjoueurs
   int i, j;
-  partie *p = malloc(sizeof(struct partie));
-  char ** map = malloc(l * sizeof(char*));
-  int * score = malloc(nbjoueurs * sizeof(int));
-  int * canplay = malloc(nbjoueurs * sizeof(int));
+  partie *p = (partie*) malloc(sizeof(struct partie));
+  char ** map = (char**) malloc(l * sizeof(char*));
+  int * score = (int*) malloc(nbjoueurs * sizeof(int));
+  int * canplay = (int *) malloc(nbjoueurs * sizeof(int));
   for (i=0 ; i < l ; i++)
     {
-      map[i] = malloc(h*sizeof(char));
+      map[i] = (char*) malloc(h*sizeof(char));
     }
   for (i=0 ; i < l ; i++)
     {
@@ -483,7 +483,7 @@ void destroy(partie *p){
 
 char * getmap(partie *p){
   int i, j, k;
-  char *s =  calloc(((p->l)*(p->h))+1, sizeof(char));
+  char *s = (char*) calloc(((p->l)*(p->h))+1, sizeof(char));
   k = 0;
   for (j=0 ; j < p->h ; j++){
     for (i=0 ; i < p->l ; i++){
