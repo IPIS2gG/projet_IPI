@@ -634,7 +634,7 @@ void affiche_score(int * score, int nbjoueurs)
 
 
 // ########################### test des fonctions ##################################
-
+/*
 int main(){
   
   partie *p;
@@ -646,7 +646,7 @@ int main(){
   
   affiche_map(getmap(p), p->l, p->h);
   affiche_score(p->score, p->nbjoueurs);
-
+*/
   /*
   printf(" ######################## \n");
   play(p, 0, 0, 1);
@@ -710,7 +710,7 @@ int main(){
 */
 
 // ################"
-
+/*
   play(p, 2, 0, 1);
   play(p, 2, 1, 2);
   play(p, 2, 3, 3);
@@ -764,5 +764,5 @@ int main(){
   return 0;
 }
 
-
+*/
 
