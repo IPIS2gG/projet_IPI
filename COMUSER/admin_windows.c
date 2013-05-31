@@ -66,7 +66,7 @@ void signal_create_game(GtkWidget* widget, void* data);
 void creer_fenetre_pre_game (struct toutes_les_fenetres* m)
 {
 	//création de la fenêtre de pré-game
-	
+
 	//indentation = inclusions des widgets
 	GtkWidget* window;
 		GtkWidget* main_Vbox;
@@ -86,6 +86,8 @@ void creer_fenetre_pre_game (struct toutes_les_fenetres* m)
 					GtkWidget* entry_h;
 					GtkWidget* label_nbj;
 					GtkWidget* entry_nbj;
+					GtkWidget* label_nbc;
+					GtkWidget* entry_nbc;
 					GtkWidget* label_err;
 					GtkWidget* bouton_launch;
 	
@@ -140,7 +142,7 @@ void creer_fenetre_pre_game (struct toutes_les_fenetres* m)
 												frame_create_part,
 												TRUE, TRUE, 0);
 				//table de placement pour la création d'utilisateurs
-				table_create_part=gtk_table_new(3, 4, FALSE);
+				table_create_part=gtk_table_new(4, 4, FALSE);
 				gtk_container_add(GTK_CONTAINER(frame_create_part), table_create_part);
 
 					//création des widgets création partie
@@ -150,29 +152,36 @@ void creer_fenetre_pre_game (struct toutes_les_fenetres* m)
 					entry_w=gtk_entry_new();
 					gtk_table_attach(GTK_TABLE(table_create_part), entry_w,
 							0, 1, 1, 2, GTK_EXPAND, GTK_EXPAND, 5, 5);
-					
+
 					label_h=gtk_label_new("hauteur");
 					gtk_table_attach(GTK_TABLE(table_create_part), label_h,
 							1, 2, 0, 1, GTK_EXPAND, GTK_EXPAND, 5, 5);
 					entry_h=gtk_entry_new();
 					gtk_table_attach(GTK_TABLE(table_create_part), entry_h,
 							1, 2, 1, 2, GTK_EXPAND, GTK_EXPAND, 5, 5);
-					
+
 					label_nbj=gtk_label_new("nb joueur max");
 					gtk_table_attach(GTK_TABLE(table_create_part), label_nbj,
 							2, 3, 0, 1, GTK_EXPAND, GTK_EXPAND, 5, 5);
 					entry_nbj=gtk_entry_new();
 					gtk_table_attach(GTK_TABLE(table_create_part), entry_nbj,
 							2, 3, 1, 2, GTK_EXPAND, GTK_EXPAND, 5, 5);
-					
+
+					label_nbc=gtk_label_new("nb coups max");
+					gtk_table_attach(GTK_TABLE(table_create_part), label_nbc,
+							3, 4, 0, 1, GTK_EXPAND, GTK_EXPAND, 5, 5);
+					entry_nbc=gtk_entry_new();
+					gtk_table_attach(GTK_TABLE(table_create_part), entry_nbc,
+							3, 4, 1, 2, GTK_EXPAND, GTK_EXPAND, 5, 5);
+
 					label_err=gtk_label_new("");
 					gtk_table_attach(GTK_TABLE(table_create_part), label_err,
-							0, 3, 2, 3, GTK_EXPAND, GTK_EXPAND, 5, 5);
-					
+							0, 4, 2, 3, GTK_EXPAND, GTK_EXPAND, 5, 5);
+
 					bouton_launch=gtk_button_new_with_label("Créer partie");
 					gtk_table_attach(GTK_TABLE(table_create_part), bouton_launch,
-							0, 3, 3, 4, GTK_EXPAND, GTK_EXPAND, 5, 5);
-	
+							0, 4, 3, 4, GTK_EXPAND, GTK_EXPAND, 5, 5);
+
 	//#### SIGNAUX ##########
 	
 	//######################################################
@@ -205,11 +214,14 @@ void creer_fenetre_pre_game (struct toutes_les_fenetres* m)
 		g_signal_connect(GTK_OBJECT(entry_mdp), "activate",
 								G_CALLBACK(signal_create_user),
 								 m);
+
 	//création partie
 		m->fenetre_pre_game.param_create_game.entry_w=entry_w;
 		m->fenetre_pre_game.param_create_game.entry_h=entry_h;
 		m->fenetre_pre_game.param_create_game.entry_nbj=entry_nbj;
+		m->fenetre_pre_game.param_create_game.entry_nbc=entry_nbc;
 		m->fenetre_pre_game.param_create_game.label_err=label_err;
+
 		g_signal_connect(GTK_OBJECT(bouton_launch), "clicked",
 								G_CALLBACK(signal_create_game),
 								 m);
@@ -226,7 +238,7 @@ void creer_fenetre_pre_game (struct toutes_les_fenetres* m)
   //Enregistrement de la fenêtre dans la structure globale.
   m->fenetre_pre_game.adresse = window;
   m->fenetre_pre_game.open = false;
-	
+  m->fenetre_pre_game.sig_destroy = signal_window_destroy_handler;
 	//gtk_widget_show_all(window);
 	//gtk_main();
 	//g_signal_handler_disconnect(window, signal_window_destroy_handler);
@@ -239,30 +251,47 @@ void signal_create_user(GtkWidget* widget, gpointer data)
 	//LOCK GTK OK
 	struct toutes_les_fenetres* m = (struct toutes_les_fenetres*) data;
 	char* message;
-  int i;
-
-
+  int i = 0;
 
 	char* login = (char*) gtk_entry_get_text(m->fenetre_pre_game.param_create_user.entry_login);
 	char* mdp = (char*) gtk_entry_get_text(m->fenetre_pre_game.param_create_user.entry_mdp);
 
+  printf("Appuis sur 'créer utilisateur'. Login : %s. MDP : %s.\n", login, mdp);
+
   while (*(login + i)) i++;
-
 	if(i<3)
-	{	gtk_label_set_text(m->fenetre_pre_game.param_create_user.label_err, "Le login doit faire trois caractères minimum."); return ;}
+	{
+    printf("Erreur : Login de taille %d < 3\n", i);
+    gtk_label_set_text(m->fenetre_pre_game.param_create_user.label_err, "Le login doit faire trois caractères minimum.");
+    return ;
+  }
 	if(i>15)
-	{	gtk_label_set_text(m->fenetre_pre_game.param_create_user.label_err, "Le login doit faire quinze caractères maximum."); return ;}
+	{
+    printf("Erreur : Login de taille %d > 15\n", i);
+    gtk_label_set_text(m->fenetre_pre_game.param_create_user.label_err, "Le login doit faire quinze caractères maximum.");
+    return;
+  }
 
+  i = 0;
   while (*(mdp + i)) i++;
 	if(i<3)
-	{	gtk_label_set_text(m->fenetre_pre_game.param_create_user.label_err, "Le mot de passe doit faire trois caractères minimum."); return ;}
+	{
+    printf("Erreur : Mot de passe de taille %d < 3\n", i);
+    gtk_label_set_text(m->fenetre_pre_game.param_create_user.label_err, "Le mot de passe doit faire trois caractères minimum.");
+    return ;
+  }
 	if(i>15)
-	{	gtk_label_set_text(m->fenetre_pre_game.param_create_user.label_err, "Le mot de passe doit faire quinze caractères maximum."); return ;}
+	{
+    printf("Erreur : Mot de passe de taille %d > 15\n", i);
+    gtk_label_set_text(m->fenetre_pre_game.param_create_user.label_err, "Le mot de passe doit faire quinze caractères maximum.");
+    return ;
+  }
 
-	message = concat_string_gfree(concat_string_gfree(concat_string_gfree(concat_string("Création de l'utilisateur ", login), " (mdp : "), mdp), ").");
-	gtk_label_set_text(m->fenetre_pre_game.param_create_user.label_err, message);
+  message = concat_string_gfree(concat_string_gfree(concat_string_gfree(concat_string("Création de l'utilisateur ", login), " (mdp : "), mdp), ").");
+  gtk_label_set_text(m->fenetre_pre_game.param_create_user.label_err, message);
+  free(message);
 
-	creer_utilisateur(m, (char*) login, (char*) mdp);
+  creer_utilisateur(m, (char*) login, (char*) mdp);
 }
 
 void signal_create_game(GtkWidget* widget, gpointer data)
@@ -273,11 +302,13 @@ void signal_create_game(GtkWidget* widget, gpointer data)
 	int w;
 	int h;
 	int nbj;
+  int nbc;
 	GtkWidget* label_err=param->label_err;
 
 	w=atoi(gtk_entry_get_text(GTK_ENTRY(param->entry_w)));
 	h=atoi(gtk_entry_get_text(GTK_ENTRY(param->entry_h)));
 	nbj=atoi(gtk_entry_get_text(GTK_ENTRY(param->entry_nbj)));
+	nbc=atoi(gtk_entry_get_text(GTK_ENTRY(param->entry_nbc)));
 	
 	if(w<5)
 	{	gtk_label_set_text(GTK_LABEL(label_err), "w doit être >=5"); return ;}
@@ -287,10 +318,12 @@ void signal_create_game(GtkWidget* widget, gpointer data)
 	{	gtk_label_set_text(GTK_LABEL(label_err), "Le nombre de joueurs doit être >=2"); return ;}
 	if(nbj>9)
 	{	gtk_label_set_text(GTK_LABEL(label_err), "Le nombre de joueurs doit être <=9"); return ;}
+	if(nbc < 10 * nbj)
+	{	gtk_label_set_text(GTK_LABEL(label_err), "Le nombre de coups doit être >= 10 * nb de joueurs"); return ;}
 
 	printf("Création de la partie : %dx%d , %d joueurs max\n", w, h, nbj);
 
-	creer_jeu (m, h, w, nbj);
+	creer_jeu (m, h, w, nbj, nbc);
 	//gtk_main_quit();
 	//gtk_widget_destroy(window); marcherai, mais créé un window::destroy, pas cool !
 }
@@ -413,6 +446,7 @@ void creer_fenetre_accept_joueur(struct toutes_les_fenetres* m)
   m->fenetre_accept_joueur.label_aff_accepted = label_aff_accepted;
   m->fenetre_accept_joueur.bouton_launch = bouton_launch;
   m->fenetre_accept_joueur.nb_joueurs_acceptes = 0;
+  m->fenetre_accept_joueur.sig_destroy = signal_window_destroy_handler;
 
 	//######################################################
 	//####### A VIRER => TESTS #############################

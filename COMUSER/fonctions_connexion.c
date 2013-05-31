@@ -18,6 +18,8 @@ void connexion (struct toutes_les_fenetres* m, char* login, char* mdp)
   int erreur = 0;
 
 
+  printf("_________________TEST changement instruction : %p\n", m->fenetre_connexion.instruction);
+
   gdk_threads_enter();
   gtk_label_set_text(m->fenetre_principale.instruction, "Tentative de connexion. Veuillez patienter s'il vous plaît...");
 
@@ -92,11 +94,12 @@ void connexion (struct toutes_les_fenetres* m, char* login, char* mdp)
     g_thread_exit(NULL);
   }
 
-
   gtk_widget_hide (m->fenetre_principale.adresse);
   m->fenetre_principale.open = 0;
   gtk_widget_show_all (m->fenetre_connexion.adresse);
   m->fenetre_connexion.open = 1;
+
+  printf("_________________TEST changement instruction : %p\n", m->fenetre_connexion.instruction);
 
   gtk_label_set_text(m->fenetre_connexion.instruction, "Tentative de connexion.\nVeuillez patienter s'il vous plaît...");
   printf("\nTentative de connexion...\n");
@@ -231,6 +234,12 @@ void attendre_et_dechiffrer_message (struct toutes_les_fenetres* m, char command
       printf("Commande reçue : %c\n   ", caractere);
 
       //Récupération de la valeur d'acceptation.
+      free(mot);
+      mot = lire_mot(sock, &taille_mot);
+      verifier_socket (m, taille_mot, mot);
+      free(m->mess.pseudo);
+      m->mess.pseudo = mot;
+
       free(mot);
       mot = lire_mot(sock, &taille_mot);
       caractere = stoc(m, taille_mot, mot, "'0' ou '1'");

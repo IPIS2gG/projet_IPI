@@ -88,14 +88,14 @@ void* attendre_validation_creation_utilisateur (void* arg)
 
 
 
-void creer_jeu (struct toutes_les_fenetres* m, int hauteur, int largeur, int nombre_de_joueurs)
+void creer_jeu (struct toutes_les_fenetres* m, int hauteur, int largeur, int nombre_de_joueurs, int nombre_de_coups)
 {
   char* message_envoye;
   int i;
 
   if(m->fenetre_pre_game.param_create_user.thread_ouvert) g_thread_join(m->fenetre_pre_game.param_create_user.thread);
 
-  message_envoye = concat_string_gfree(concat_string_gfree(concat_string_gfree(concat_string_gfree(concat_string("N ", itoa(largeur)), " "), itoa(hauteur)), " "), itoa(nombre_de_joueurs));
+  message_envoye = concat_string_gfree(concat_string_gfree(concat_string_gfree(concat_string_gfree(concat_string_gfree(concat_string_gfree(concat_string("N ", itoa(largeur)), " "), itoa(hauteur)), " "), itoa(nombre_de_coups)), " "), itoa(nombre_de_joueurs));
   i = 0;
   while (*(message_envoye + i)) i++;
   write(m->sock, message_envoye, i+1);
@@ -133,6 +133,7 @@ void* attendre_reception_demandes_joueurs (void* arg)
       case 's' :
         printf("\nCommande de création de partie.\n");
         m->numero_user = 0;
+        m->open_sdl = true;
         gdk_threads_enter();
         gtk_main_quit();
         gdk_threads_leave();

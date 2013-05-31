@@ -63,6 +63,7 @@ void attente_debut_partie_joueur (struct toutes_les_fenetres* m)
   {
     case 's' :
       printf("\nCommande de création de partie.\n");
+      m->open_sdl = true;
       trouver_numero_joueur(m);
       gdk_threads_enter();
       gtk_main_quit();
@@ -87,19 +88,19 @@ void trouver_numero_joueur(struct toutes_les_fenetres* m)
   char* p;
   char* c;
 
-  printf("Recherche du numéro de joueur :");
+  printf("Recherche du numéro de joueur :\n");
 
   for (i=0; i<m->mess.nb_joueurs; i++)
   {
     p = m->pseudo_user;
     printf("     Pseudo user : %s == ", p);
     c = m->mess.pseudo_joueur[i];
-    printf("%s : Pseudo joueur ?", c);
+    printf("%s : Pseudo joueur ?\n", c);
     while (*p == *c)
     {
       if (*p == '\0')
       {
-        printf ("Utilisateur courant (numéro) : %d", i);
+        printf ("Utilisateur courant (numéro) : %d\n", i + 1);
         m->numero_user = i + 1;
         return;
       }
@@ -107,8 +108,8 @@ void trouver_numero_joueur(struct toutes_les_fenetres* m)
     }
   }
 
-  fprintf(stderr, "Pseudo de l'utilisateur non-trouvé. Numéro 1 par défaut.\n");
-  m->numero_user = 1;
+  fprintf(stderr, "Pseudo de l'utilisateur non-trouvé. Numéro 0 par défaut (ne jouera pas).\n");
+  m->numero_user = 0;
 }
 
 
@@ -122,6 +123,7 @@ void traitement_jeu (struct toutes_les_fenetres* m)
   char* message_envoye;
   int numero_joueur = m->numero_user;
   int sock = m->sock;
+  bool fermer_thread = false;
 
   printf("Lancement du jeu avec les paramètre suivant :\n");
   printf("nb joueurs : %d, nb_col_map : %d, nb_lig_map : %d\n", m->mess.nb_joueurs, m->mess.nb_col_map, m->mess.nb_lig_map);
@@ -132,9 +134,8 @@ void traitement_jeu (struct toutes_les_fenetres* m)
     arret_sdl();
     exit (EXIT_FAILURE);
   }
-  trouver_numero_joueur(m);
 
-  g_thread_unref(g_thread_new("Attente_fermeture", attente_fermeture, NULL));
+  g_thread_unref(g_thread_new("Attente_fermeture", attente_fermeture, &fermer_thread));
 
   while(1)
   {
@@ -148,7 +149,10 @@ void traitement_jeu (struct toutes_les_fenetres* m)
 
         if (m->mess.joueur_dont_cest_le_tour == numero_joueur)
         {
+          fermer_thread = true;
           a_toi_de_jouer(&x, &y, m->mess.map);
+          fermer_thread = false;
+          g_thread_unref(g_thread_new("Attente_fermeture", attente_fermeture, &fermer_thread));
 
           message_envoye = concat_string_bfree(concat_string_gfree(concat_string_dfree("P ", itoa(x)), " "), itoa(y));
           i = 0;
@@ -184,7 +188,7 @@ void fin_de_partie (struct toutes_les_fenetres* m)
 
 void* attente_fermeture (void* arg)
 {
-  attendre_clic_croix();
+  attendre_clic_croix_ou_changement_etat((bool*) arg, g_thread_exit);
   arret_sdl();
 
   return arg;

@@ -1470,6 +1470,32 @@ void attendre_clic_croix()
 }
 
 
+void attendre_clic_croix_ou_changement_etat(bool* fermer_thread, void (*g_thread_exit)(void*))
+{
+  if (!initialise)
+  {
+    fprintf(stderr, "Lancement de attendre_clic_croix sans initialisation.\n");
+    return;
+  }
+
+  bool continuer = true;
+  SDL_Event event;
+
+  while (continuer)
+  {
+    SDL_WaitEvent(&event);
+    switch(event.type)
+    {
+      case SDL_QUIT:
+        continuer = false;
+      default:
+        if (*fermer_thread) g_thread_exit(NULL);
+    }
+  }
+}
+
+
+
 
 
 

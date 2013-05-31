@@ -11,7 +11,15 @@ void creer_fenetres (struct toutes_les_fenetres* m)
 
 void detruire_fenetres (struct toutes_les_fenetres* m)
 {
-  //TODO
+  printf("Destruction des fenêtres GTK...\n");
+  g_signal_handler_disconnect(m->fenetre_accept_joueur.adresse, m->fenetre_accept_joueur.sig_destroy); //DECONNECTE LE SIGNAL
+  gtk_widget_destroy(m->fenetre_accept_joueur.adresse); //on peut la détruire
+  g_signal_handler_disconnect(m->fenetre_pre_game.adresse, m->fenetre_pre_game.sig_destroy); //DECONNECTE LE SIGNAL
+  gtk_widget_destroy(m->fenetre_pre_game.adresse); //on peut la détruire
+  g_signal_handler_disconnect(m->fenetre_connexion.adresse, m->fenetre_connexion.sig_destroy); //DECONNECTE LE SIGNAL
+  gtk_widget_destroy(m->fenetre_connexion.adresse); //on peut la détruire
+  g_signal_handler_disconnect(m->fenetre_principale.adresse, m->fenetre_connexion.sig_destroy); //DECONNECTE LE SIGNAL
+  gtk_widget_destroy(m->fenetre_principale.adresse); //on peut la détruire
 }
 
 void creer_fenetre_principale (struct toutes_les_fenetres* m)
@@ -28,7 +36,7 @@ void creer_fenetre_principale (struct toutes_les_fenetres* m)
 
   /* Creation de la fenêtre principale */
   p_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  g_signal_connect (G_OBJECT (p_window), "destroy", G_CALLBACK (arret), p_window);
+  m->fenetre_principale.sig_destroy = g_signal_connect (G_OBJECT (p_window), "destroy", G_CALLBACK (arret), p_window);
   gtk_window_set_title (GTK_WINDOW (p_window), "Puissance 5 en réseau");
 
   /*Création du conteneur principal*/
@@ -42,7 +50,7 @@ void creer_fenetre_principale (struct toutes_les_fenetres* m)
   /*Création du menu Quitter*/
   p_menu = gtk_menu_new ();
   p_menu_item = gtk_menu_item_new_with_mnemonic ("_Fichier");
-  menu_item_new (GTK_MENU(p_menu), "Quitter", G_CALLBACK(arret), NULL);
+  menu_item_new (GTK_MENU(p_menu), "Quitter", G_CALLBACK(arret), m);
   gtk_menu_item_set_submenu (GTK_MENU_ITEM (p_menu_item), p_menu);
   gtk_menu_shell_append (GTK_MENU_SHELL (p_menu_bar), p_menu_item);
 
@@ -52,7 +60,7 @@ void creer_fenetre_principale (struct toutes_les_fenetres* m)
 
   /*Création du bouton quitter*/
   p_bouton_quitter = gtk_button_new_from_stock (GTK_STOCK_QUIT);
-  g_signal_connect (G_OBJECT (p_bouton_quitter), "clicked", G_CALLBACK (arret), NULL);
+  g_signal_connect (G_OBJECT (p_bouton_quitter), "clicked", G_CALLBACK (arret), m);
   gtk_box_pack_end (GTK_BOX (p_box_boutons), p_bouton_quitter, FALSE, FALSE, 0);
 
   /*Création du bouton Valider*/
@@ -63,15 +71,19 @@ void creer_fenetre_principale (struct toutes_les_fenetres* m)
   //Création du champ de mot de passe
   m->fenetre_principale.mdp = add_new_champ_end("Mot de passe :", p_main_box, 0);
   gtk_entry_set_visibility(m->fenetre_principale.mdp.entry, FALSE);
+  g_signal_connect(GTK_OBJECT(m->fenetre_principale.mdp.entry), "activate", G_CALLBACK(traitement_champs), (gpointer) m);
 
   //Création du champ de login
   m->fenetre_principale.login = add_new_champ_end("Login :", p_main_box, 0);
+  g_signal_connect(GTK_OBJECT(m->fenetre_principale.login.entry), "activate", G_CALLBACK(traitement_champs), (gpointer) m);
 
   //Création du champ de port
   m->fenetre_principale.port = add_new_champ_end("Port :", p_main_box, 0);
+  g_signal_connect(GTK_OBJECT(m->fenetre_principale.port.entry), "activate", G_CALLBACK(traitement_champs), (gpointer) m);
 
   //Création du champ de IP
   m->fenetre_principale.ip = add_new_champ_end("IP :", p_main_box, 16);
+  g_signal_connect(GTK_OBJECT(m->fenetre_principale.ip.entry), "activate", G_CALLBACK(traitement_champs), (gpointer) m);
 
   //Création de l'instruction
   p_instruction = gtk_label_new("Veuillez rentrer les informations pour vous connecter :");
@@ -134,7 +146,7 @@ void creer_fenetre_connexion (struct toutes_les_fenetres* m)
       //GtkWidget* p_bouton_annuler;
 
   p_window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  g_signal_connect (G_OBJECT (p_window), "destroy", G_CALLBACK (arret), (gpointer) NULL);
+  m->fenetre_connexion.sig_destroy = g_signal_connect (G_OBJECT (p_window), "destroy", G_CALLBACK (arret), (gpointer) NULL);
   gtk_window_set_title (GTK_WINDOW (p_window), "Tentative de connexion");
 
   //Création du conteneur principal
