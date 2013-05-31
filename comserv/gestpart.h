@@ -1,6 +1,6 @@
 typedef struct partie partie;
 
-partie * init(int l, int h, int nb_joueur);
+partie * init(int l, int h, int nb_joueur, int nbcoupmax);
 
 int play(partie *, int x, int y, int joueur);
 

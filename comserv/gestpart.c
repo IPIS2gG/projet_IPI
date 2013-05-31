@@ -10,6 +10,8 @@ typedef struct partie partie;
 
 struct partie {
 	int nbjoueurs; 
+	int nbcoup;
+	int nbcoupmax; // la partie s'arrête lorsque le nombre de coups maximal a été atteint
 	int l; // largeur 
 	int h; // hauteur
 	char **map;
@@ -22,7 +24,7 @@ struct partie {
 // ##########################################################################################################################
 // init initialise la partie
 // retourne la partie initialisée
-partie *init(int l, int h, int nbjoueurs)
+partie *init(int l, int h, int nbjoueurs, int nbcoupmax)
 {
 	if (l < 5)
 	{
@@ -40,7 +42,8 @@ partie *init(int l, int h, int nbjoueurs)
 		exit(0);
 	} 
 
-	int i, j;
+	int i, j, nbcoup;
+	nbcoup = 0;
 	partie *p = (partie*) malloc(sizeof(struct partie));
 	char ** map = (char**) malloc(l * sizeof(char*));
 	int * score = (int*) malloc(nbjoueurs * sizeof(int));
@@ -64,6 +67,8 @@ partie *init(int l, int h, int nbjoueurs)
 	{
 		canplay[i] = 1;
 	}
+	p->nbcoup = nbcoup;
+	p->nbcoupmax = nbcoupmax;
 	p->map = map;
 	p->score = score;
 	p->canplay = canplay;
@@ -412,7 +417,7 @@ int is_fin_de_partie(partie *p){
 			compteur++;
 		}
 	}
-	if (compteur == 0)
+	if ((compteur == 0) || (p->nbcoup >= p->nbcoupmax))
 	{ 
 		// c'est la fin de la partie
 		return 1;
@@ -495,6 +500,8 @@ int play(partie *p, int x, int y, int joueur)
 	{
 		// on marque la case 
 		p->map[x][y] = 'X';
+		// mise à jour du nombre de coups
+		p->nbcoup++;
 		// on met à jour les coordonnées du dernier coup
 		p->xd = x;
 		p->yd = y;
@@ -627,11 +634,11 @@ void affiche_score(int * score, int nbjoueurs)
 
 
 // ########################### test des fonctions ##################################
-/*
+
 int main(){
   
   partie *p;
-  p = init(6, 7, 3); 
+  p = init(6, 7, 3, 10); 
   printf("largeur : %d\n", p->l);
   printf("hauteur : %d\n", p->h);
   printf("nombre de joueurs : %d\n", p->nbjoueurs); 
@@ -640,7 +647,7 @@ int main(){
   affiche_map(getmap(p), p->l, p->h);
   affiche_score(p->score, p->nbjoueurs);
 
-  
+  /*
   printf(" ######################## \n");
   play(p, 0, 0, 1);
   play(p, 1, 1, 2);
@@ -703,7 +710,7 @@ int main(){
 */
 
 // ################"
-/*
+
   play(p, 2, 0, 1);
   play(p, 2, 1, 2);
   play(p, 2, 3, 3);
@@ -756,6 +763,6 @@ int main(){
   
   return 0;
 }
-*/
+
 
 
