@@ -36,6 +36,7 @@ struct fenetre_principale
   struct entry_label port;
   struct entry_label login;
   struct entry_label mdp;
+  gulong sig_destroy;
 };
 
 struct fenetre_connexion
@@ -43,6 +44,7 @@ struct fenetre_connexion
   bool open;
   GtkWidget* adresse;
   GtkLabel* instruction;
+  gulong sig_destroy;
 };
 
 struct param_signal_create_game //click sur créer partie
@@ -50,6 +52,7 @@ struct param_signal_create_game //click sur créer partie
 	GtkWidget* entry_w;
 	GtkWidget* entry_h;
 	GtkWidget* entry_nbj;
+	GtkWidget* entry_nbc;
 	GtkWidget* label_err;
 };
 
@@ -69,6 +72,7 @@ struct fenetre_pre_game
   GtkWidget* adresse;
 	struct param_signal_create_user param_create_user;
   struct param_signal_create_game param_create_game;
+  gulong sig_destroy;
 };
 
 struct fenetre_accept_joueur
@@ -79,6 +83,7 @@ struct fenetre_accept_joueur
   GtkWidget* label_aff_accepted;
   GtkWidget* bouton_launch;
   int nb_joueurs_acceptes;
+  gulong sig_destroy;
 };
 
 struct message_recu
@@ -162,7 +167,7 @@ void traitement_champs (GtkWidget*, gpointer);
     void traitement_admin (struct toutes_les_fenetres*);
       void creer_utilisateur (struct toutes_les_fenetres*, const char*, const char*);
         void* attendre_validation_creation_utilisateur (void*);
-      void creer_jeu (struct toutes_les_fenetres*, int, int, int);
+      void creer_jeu (struct toutes_les_fenetres*, int, int, int, int);
         void* attendre_reception_demandes_joueurs (void*);
 
 void retour_fenetre_connexion(struct toutes_les_fenetres*, char*, bool);

@@ -30,6 +30,7 @@ int main(int argc, char** argv)
   mess.map = map;
   mess.pseudo = pseudo;
   m.mess = mess;
+  m.open_sdl = false;
 
   // Initialisation des threads
   if(!XInitThreads())
@@ -54,9 +55,14 @@ int main(int argc, char** argv)
   gtk_main ();
   gdk_threads_leave();
 
-  //Si on sort de la boucle, cela veut dire qu'on est un joueur et qu'on veut lancer le jeu
-  printf("Lancement du jeu.\n");
-  traitement_jeu(&m);
+  detruire_fenetres(&m);
+
+  //Si on sort de la boucle et open_sdl = true, cela veut dire qu'on est un joueur et qu'on veut lancer le jeu
+  if (m.open_sdl)
+  {
+    printf("Lancement du jeu.\n");
+    traitement_jeu(&m);
+  }
 
   return EXIT_SUCCESS;
 }
@@ -202,6 +208,8 @@ void* authentification (void* arg)
 
 void arret (GtkWidget *p_widget, gpointer user_data)
 {
+  struct toutes_les_fenetres* m = (struct toutes_les_fenetres*) user_data;
+  detruire_fenetres (m);
   gtk_main_quit();
 
   /* Parametres inutilises */
