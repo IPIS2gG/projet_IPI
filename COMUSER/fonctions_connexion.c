@@ -240,7 +240,6 @@ void attendre_et_dechiffrer_message (struct toutes_les_fenetres* m, char command
       free(m->mess.pseudo);
       m->mess.pseudo = mot;
 
-      free(mot);
       mot = lire_mot(sock, &taille_mot);
       caractere = stoc(m, taille_mot, mot, "'0' ou '1'");
 
