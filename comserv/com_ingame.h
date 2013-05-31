@@ -5,6 +5,7 @@ struct param_partie
 {
 	int w;
 	int h;
+	int nb_coups;
 	int nb_max;
 	std::vector<int> tab_stream;
 	std::vector<char*> tab_pseudo;

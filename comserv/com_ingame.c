@@ -22,6 +22,7 @@ void launch_game(struct param_partie* infos)
 {
 	int w=infos->w;
 	int h=infos->h;
+	int nb_coups=infos->nb_coups;
 	std::vector<int> tab_stream=infos->tab_stream; //copies, on s'en fou, c'est des int et petite taille
 	std::vector<char*> tab_pseudo=infos->tab_pseudo;
 	unsigned int nb_joueur=tab_pseudo.size()-1;
@@ -87,7 +88,7 @@ void launch_game(struct param_partie* infos)
 	free(buff);
 	
 	print("Initialisation de la partie .... ");
-	part = init(w,h,nb_joueur);
+	part = init(w,h,nb_joueur, nb_coups);
 	if(part==NULL)
 	{
 		print("fatal error !");

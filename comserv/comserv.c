@@ -394,7 +394,7 @@ void* thread_connection_client(void * param)
 	char type_rep; //type de réponse
 	char char_rep; //caractère dans la réponse
 	int int_rep; //entier dans une réponse
-	int w,h,nb_max; //envoi de l'admin
+	int w,h,nb_coups,nb_max; //envoi de l'admin
 	char pseudo[17]; //chaine du pseudo de l'utilisateur au bout du fil
 	char mdp[17];
 	char* rep_comm=NULL; //chaine dans la boite au lettres (tab_comm)
@@ -607,12 +607,13 @@ void* thread_connection_client(void * param)
 					break;
 				case 'N' :
 					//extraction des infos
-					sscanf(buff_read, "%*c %2d %2d %2d", &w, &h, &nb_max); //lecture de la réponse
+					sscanf(buff_read, "%*c %2d %2d %4d %2d", &w, &h,&nb_coups, &nb_max); //lecture de la réponse
 					printf("   Admin means : type:N w='%d' h='%d' nb_max='%d'\n",
 													w,h,nb_max);
 					fflush(stdout);
 					info_partie->w=w;
 					info_partie->h=h;
+					info_partie->nb_coups=nb_coups;
 					info_partie->nb_max=nb_max;
 					print("   Admin : partie créée\n");
 					cont=false;
