@@ -195,12 +195,6 @@ int main(int argc, char** argv)
 	mes_infos.sin_family=AF_INET;
 	mes_infos.sin_addr.s_addr=INADDR_ANY;
 	
-	//demande d'un port de connexion
-	print("Port d'écoute -> "); //récupération du port d'écoute du serveur depuis stdin
-	scanf("%6ud", &mon_port);
-	flush();
-	mes_infos.sin_port=htons(mon_port);
-	
 	print("Initialisation ...\n");
 	
 	//création du socket
@@ -210,15 +204,25 @@ int main(int argc, char** argv)
 		fprintf(stderr,"Erreur -> socket : %s\n", msg_err);
 		exit(-1);
 	}
-	
-	printf("Ouverture du port %d ...\n",ntohs(mes_infos.sin_port));
-	fflush(stdout);
-	
-	//bind du socket
-	if(bind(sock_client, (struct sockaddr*) &mes_infos, sizeof(mes_infos))<0)
+
+	cont=0;
+	while(cont==0)
 	{
-		fprintf(stderr,"Erreur -> bind : %s\n", msg_err);
-		exit(-1);
+		//demande d'un port de connexion
+		print("Port d'écoute -> "); //récupération du port d'écoute du serveur depuis stdin
+		scanf("%6ud", &mon_port);
+		flush();
+		mes_infos.sin_port=htons(mon_port);
+		
+		printf("Ouverture du port %d ...\n",ntohs(mes_infos.sin_port));
+		fflush(stdout);
+		cont=1;
+		//bind du socket
+		if(bind(sock_client, (struct sockaddr*) &mes_infos, sizeof(mes_infos))<0)
+		{
+			fprintf(stderr,"Erreur -> bind : %s\n", msg_err);
+			cont=
+		}
 	}
 	
 	//paramétrage de l'écoute
@@ -703,7 +707,7 @@ void* thread_connection_client(void * param)
 		print("   ");
 		aff_thread_info(id, &client);
 		print(" -> envoi demande confirm admin ...\n");
-		write(*sock_admin, buff_write, strlen(buff_write));
+		write(*sock_admin, buff_write, strlen(buff_write)+1);
 		print("   ");
 		aff_thread_info(id, &client);
 		print(" -> attente confirm admin ...\n");
