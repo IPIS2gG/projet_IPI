@@ -685,7 +685,7 @@ void affiche_score(int * score, int nbjoueurs)
 
 
 // ########################### test des fonctions ##################################
-
+/*
 int main(){
   
   partie *p;
@@ -697,7 +697,7 @@ int main(){
   
   affiche_map(getmap(p), p->l, p->h);
   affiche_score(p->score, p->nbjoueurs);
-
+*/
   /*
   printf(" ######################## \n");
   play(p, 0, 0, 1);
@@ -761,7 +761,7 @@ int main(){
 */
 
 // ################"
-
+/*
   play(p, 2, 0, 1);
   play(p, 2, 1, 2);
   play(p, 2, 3, 3);
@@ -779,14 +779,15 @@ int main(){
   play(p, 5, 5, 1);  
   printf("la map est : %s\n", getmap(p));
   affiche_map(getmap(p), p->l, p->h);
-  play(p, 0, 3, 3);  
-  play(p, 1, 3, 3);  
-  play(p, 3, 3, 3); 
-  play(p, 4, 3, 3);
+  play(p, 0, 4, 3);  
+  play(p, 1, 4, 3);  
+  play(p, 3, 4, 3); 
+  play(p, 4, 4, 3);
  
-  play(p, 4, 4, 1); 
+  play(p, 4, 3, 1); 
   play(p, 4, 5, 2); 
-  play(p, 4, 6, 3);
+  play(p, 4, 1, 3);
+  */
 /*
   play(p, 5, 1, 3);
   play(p, 5, 3, 1);
@@ -816,6 +817,7 @@ int main(){
 
   play(p, 3, 5, 1);
 */
+ /*
   printf("la map est : %s\n", getmap(p));
   affiche_map(getmap(p), p->l, p->h);
 
@@ -827,6 +829,6 @@ int main(){
  
   return 0;
 }
-
+*/
 
 
