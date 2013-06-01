@@ -138,8 +138,11 @@ void launch_game(struct param_partie* infos)
 				FD_ZERO(&writefs);
 				for(i=0; i<tab_stream.size(); ++i) //on écoutera aussi l'admin
 				{
-					FD_SET(tab_stream[i], &readfs);
-					FD_SET(tab_stream[i], &writefs);
+					if(tab_stream[i]!=-1)
+					{
+						FD_SET(tab_stream[i], &readfs);
+						FD_SET(tab_stream[i], &writefs);
+					}
 				}
 			
 				printf("Attente de communication (réponse attendue de [%s - %d])\n",
@@ -162,12 +165,20 @@ void launch_game(struct param_partie* infos)
 					{
 						printf("Erreur : client (%d) déconnecté\n", tab_stream[joueur_courant]);
 						//on retire ce joueur de la table, et on change de joueur
-						tab_stream.erase(tab_stream.begin()+joueur_courant);
+						tab_stream[joueur_courant]=-1;
 						joueur_precedant=joueur_courant;
-						joueur_courant=joueur_suivant(part, joueur_courant);
+						do
+						{
+							joueur_courant=joueur_suivant(part, joueur_courant);
+						}
+						while(tab_stream[joueur_courant]==-1 || joueur_courant==joueur_precedant);
+
+							//on cherche un nouveau joueur tant que les joueurs suivants sont déco ou
+							//qu'on doit demander à celui qui vient de déco de rejouer
+						
 						if(joueur_courant==joueur_precedant)
 						{
-							//c'était le dernier joueur
+							//le prochain joueur qui peut jouer est celui qui vient de déco
 							print("Erreur : plus de joueurs connectés");
 							stop=true;
 						}
@@ -238,7 +249,7 @@ void launch_game(struct param_partie* infos)
 							if(r<=0)
 							{
 								printf("Erreur : client déconnecté (%d)\n", tab_stream[i]);
-								tab_stream.erase(tab_stream.begin()+i);
+								tab_stream[i]=-1;
 							}
 							printf("   ERREUR : socket %d a parlé -->", tab_stream[i]);
 							write(1, buff_read, r);
