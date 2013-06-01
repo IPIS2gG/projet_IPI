@@ -248,32 +248,56 @@ int alignement5(partie *p, int x, int y, int joueur)
 	// sur les lignes
 	if (compteur_ligne >= 5)
 	{
+		compteur_ligne_droit = 0;
+		compteur_ligne_gauche = 0;
 		i = 0;
 		j = -1;
-		while (((x+i) >= 0) && ((x+i) < largeur) && ((map[x+i][y] == 'X') || (map[x+i][y] == *s)))
+		while ((compteur_ligne_droit != 1) && (((x+i) >= 0) && ((x+i) < largeur) && ((map[x+i][y] == 'X')||(map[x+i][y] == *s))))
 		{
+			if ((x+i+1 >= 0) && (x+i+1 < largeur) && (map[x+i][y] == *s) && (map[x+i+1][y] == *s))
+			{
+				compteur_ligne_droit = 1;
+			}
 			map[x+i][y] = *s;
 			i++;
 		}
-		while (((x+j) >= 0) && ((x+j) < largeur) && ((map[x+j][y] == 'X') || (map[x+j][y] == *s)))
+		// on compte le nombre de cases marquées à gauche de la case (x, y)
+		while ((compteur_ligne_gauche != 1) && (((x+j) >= 0) && ((x+j) < largeur) && ((map[x+j][y] == 'X') || (map[x+j][y] == *s))))
 		{
-			map[x+j][y] = *s;
+			if ((x+j-1 >= 0) && (x+j-1 < largeur) && (map[x+j][y] == *s) && (map[x+j-1][y] == *s))
+			{
+				compteur_ligne_gauche = 1;
+			}
+			map[x+j][y] = *s;		
 			j--;
 		}
 	}    
 
-	// sur une colonne2
+
+	// sur une colonne
 	if (compteur_col >= 5)
 	{
+		compteur_col_haut = 0;
+		compteur_col_bas = 0;
 		i=0;
-		j = -1;
-		while ((y+i >=0) && (y+i < hauteur) && ((map[x][y+i] == 'X') || (map[x][y+i] == *s)))
+		j=-1;
+		while ((compteur_col_bas !=1) && ((y+i >=0) && (y+i < hauteur) && ((map[x][y+i] == 'X') || (map[x][y+i] == *s))))
 		{
+			if ((y+i+1 >= 0) && (y+i+1 < hauteur) && (map[x][y+i] == *s) && (map[x][y+i+1] == *s))
+			{
+				compteur_col_bas = 1;
+			}
 			map[x][y+i] = *s;
 			i++;
-		}  
-		while ((y+j >=0) && (y+j < hauteur) && ((map[x][y+j] == 'X') || (map[x][y+j] == *s)))
+		}
+		// on compte le nombre de cases marquées au dessus de la case (x, y)
+		while ((compteur_col_haut != 1) && ((y+j >=0) && (y+j < hauteur) && ((map[x][y+j] == 'X') || (map[x][y+j] == *s))))
 		{
+			if ((y+j-1 >= 0) && (y+j-1 < hauteur) && (map[x][y+j] == *s) && (map[x][y+j-1] == *s))
+			{
+				// 
+				compteur_col_haut = 1;
+			}
 			map[x][y+j] = *s;
 			j--;
 		}
@@ -282,35 +306,56 @@ int alignement5(partie *p, int x, int y, int joueur)
 	// sur une diagonale
 	if (compteur_diag >= 5)
 	{
+		compteur_diag_haut = 0;
+		compteur_diag_bas = 0;
 		i = 0;
 		j = -1;
-		while ((x+i >= 0) && (x+i < largeur) && (y+i >=0) && (y+i < hauteur) && ((map[x+i][y+i] == 'X') || (map[x+i][y+i] == *s)))
+		while ((compteur_diag_bas != 1) && ((x+i >= 0) && (x+i < largeur) && (y+i >=0) && (y+i < hauteur) && ((map[x+i][y+i] == 'X') || (map[x+i][y+i] == *s))))
 		{
+			if ((x+i+1 >= 0) && (x+i+1 < largeur) && (y+i+1 >= 0) && (y+i+1 < hauteur) && (map[x+i][y+i] == *s) && (map[x+i+1][y+i+1] == *s))
+			{
+				compteur_diag_bas = 1;
+			}
 			map[x+i][y+i] = *s;
 			i++;
 		}
-		while ((x+j >= 0) && (x+j < largeur) && (y+j >=0) && (y+j < hauteur) && ((map[x+j][y+j] == 'X') || (map[x+j][y+j] == *s)))
+		while ((compteur_diag_haut != 1) && ((x+j >= 0) && (x+j < largeur) && (y+j >=0) && (y+j < hauteur) && ((map[x+j][y+j] == 'X') || (map[x+j][y+j] == *s))))
 		{
+			if ((x+j-1 >= 0) && (x+j-1 < largeur) && (y+j-1 >= 0) && (y+j-1 < hauteur) && (map[x+j][y+j] == *s) && (map[x+j-1][y+j-1] == *s))
+			{
+				compteur_diag_haut = 1;
+			}
 			map[x+j][y+j] = *s;
 			j--;
-		} 
+		}
 	}
 
 	// sur une antidiagonale
 	if (compteur_antidiag >= 5)
 	{
+		compteur_antidiag_haut = 0;
+		compteur_antidiag_bas = 0;
 		i = 0;
 		j = -1;
-		while ((x-i >= 0) && (x-i < largeur) && (y+i >=0) && (y+i < hauteur) && ((map[x-i][y+i] == 'X') || (map[x-i][y+i] == *s)))
+		while ((compteur_antidiag_bas != 1) && ((x-i >= 0) && (x-i < largeur) && (y+i >=0) && (y+i < hauteur) && ((map[x-i][y+i] == 'X') || (map[x-i][y+i] == *s))))
 		{
+			if ((x-(i+1) >= 0) && (x-(i+1) < largeur) && (y+i+1 >= 0) && (y+i+1 < hauteur) && (map[x-i][y+i] == *s) && (map[x-(i+1)][y+i+1] == *s))
+			{
+				compteur_antidiag_bas = 1;
+			}
 			map[x-i][y+i] = *s;
 			i++;
 		}
-		while ((x-j >= 0) && (x-j < largeur) && (y+j >=0) && (y+j < hauteur) && ((map[x-j][y+j] == 'X') || (map[x-j][y+j] == *s)))
+
+		while ((compteur_antidiag_haut != 1) && ((x-j >= 0) && (x-j < largeur) && (y+j >=0) && (y+j < hauteur) && ((map[x-j][y+j] == 'X') || (map[x-j][y+j] == *s))))
 		{
+			if ((x-(j-1) >= 0) && (x-(j-1) < largeur) && (y+j-1 >= 0) && (y+j-1 < hauteur) && (map[x-j][y+j] == *s) && (map[x-(j-1)][y+j-1] == *s))
+			{
+				compteur_antidiag_haut = 1;
+			}
 			map[x-j][y+j] = *s;
 			j--;
-		} 
+		}
 	}
 	
 	if ((compteur_ligne >= 5) || (compteur_col >= 5) || (compteur_diag >=5) || (compteur_antidiag >= 5))
@@ -329,6 +374,7 @@ int alignement5(partie *p, int x, int y, int joueur)
 // 0 si alignement de 5 possible autour de la case (x, y) 
 // 1 sinon
 
+
 int alignement5possible(partie *p, int x, int y, int joueur){
 	int largeur, hauteur;
 	char s[1];
@@ -339,90 +385,141 @@ int alignement5possible(partie *p, int x, int y, int joueur){
 	map = p->map;
 	sprintf(s, "%d", joueur);
 
-	/* alignement possible sur une ligne ? */
-	int compteur_ligne;
+	// alignement possible sur une ligne ? 
+	int compteur_ligne, compteur_ligne_droit, compteur_ligne_gauche;
 	compteur_ligne = 0;
+	compteur_ligne_droit = 0;
+	compteur_ligne_gauche = 0;
 	i = 0;
 	j = -1;
-	while (((x+i) >= 0) && ((x+i) < largeur) && ((map[x+i][y] == 'X') || (map[x+i][y] == 'O') || (map[x+i][y] == *s)))
+	while ((compteur_ligne_droit != 1) && (((x+i) >= 0) && ((x+i) < largeur) && ((map[x+i][y] == 'X')||(map[x+i][y] == 'O')||(map[x+i][y] == *s))))
 	{
 		compteur_ligne++;
+		if ((x+i+1 >= 0) && (x+i+1 < largeur) && (map[x+i][y] == *s) && (map[x+i+1][y] == *s))
+		{
+			// on ne prend pas en compte une case portant le numéro du joueur si elle est "précédée" d'une case portant le numéro du joueur
+			compteur_ligne_droit = 1;
+		}
 		i++;
 	}
-	while (((x+j) >= 0) && ((x+j) < largeur) && ((map[x+j][y] == 'X') || (map[x+j][y] == 'O') || (map[x+j][y] == *s)))
+	while ((compteur_ligne_gauche != 1) && (((x+j) >= 0) && ((x+j) < largeur) && ((map[x+j][y] == 'X') || (map[x+j][y] == 'O') || (map[x+j][y] == *s))))
 	{
 		compteur_ligne++;
+		if ((x+j-1 >= 0) && (x+j-1 < largeur) && (map[x+j][y] == *s) && (map[x+j-1][y] == *s))
+		{
+
+			compteur_ligne_gauche = 1;
+		}		
 		j--;
 	}
-	//printf("          compteur ligne : %d\n", compteur_ligne);
 	if (compteur_ligne >= 5)
 	{
+		printf("alignement ligne_possible joueur %d (%d, %d)\n", joueur, x, y);
 		return 0;
 	}  
 
-	/* alignement possible sur une colonne ? */
-	int compteur_col;
+	// alignement possible sur une colonne ? 
+	int compteur_col, compteur_col_haut, compteur_col_bas;
 	compteur_col = 0;
-	i = 0;
-	j = -1;
-	while ((y+i >=0) && (y+i < hauteur) && ((map[x][y+i] == 'X') || (map[x][y+i] == 'O') || (map[x][y+i] == *s)))
+	compteur_col_haut = 0;
+	compteur_col_bas = 0;
+	i=0;
+	j=-1;
+	while ((compteur_col_bas !=1) && ((y+i >=0) && (y+i < hauteur) && ((map[x][y+i] == 'X') || (map[x][y+i] == 'O') || (map[x][y+i] == *s))))
 	{
 		compteur_col++;
+		if ((y+i+1 >= 0) && (y+i+1 < hauteur) && (map[x][y+i] == *s) && (map[x][y+i+1] == *s))
+		{
+			compteur_col_bas = 1;
+		}
 		i++;
 	}
-	while ((y+j >=0) && (y+j < hauteur) && ((map[x][y+j] == 'X') || (map[x][y+j] == 'O') ||  (map[x][y+j] == *s)))
+	while ((compteur_col_haut != 1) && ((y+j >=0) && (y+j < hauteur) && ((map[x][y+j] == 'X') || (map[x][y+j] == 'O') || (map[x][y+j] == *s))))
 	{
 		compteur_col++;
+		if ((y+j-1 >= 0) && (y+j-1 < hauteur) && (map[x][y+j] == *s) && (map[x][y+j-1] == *s))
+		{
+			compteur_col_haut = 1;
+		}
 		j--;
 	}
 	if (compteur_col >= 5)
 	{
+		printf("alignement colonne possible joueur %d (%d, %d)\n", joueur, x, y);
 		return 0;
 	}
 
-	/* alignement possible sur une diagonale ? */
-	int compteur_diag;
+	// alignement possible sur une diagonale ? 
+	int compteur_diag, compteur_diag_haut, compteur_diag_bas;
 	compteur_diag = 0;
+	compteur_diag_haut = 0;
+	compteur_diag_bas = 0;
 	i = 0;
 	j = -1;
-	while ((x+i >= 0) && (x+i < largeur) && (y+i >=0) && (y+i < hauteur) && ((map[x+i][y+i] == 'X') || (map[x+i][y+i] == 'O') || (map[x+i][y+i] == *s)))
+	while ((compteur_diag_bas != 1) && ((x+i >= 0) && (x+i < largeur) && (y+i >=0) && (y+i < hauteur) && ((map[x+i][y+i] == 'X') || (map[x+i][y+i] == 'O') || (map[x+i][y+i] == *s))))
 	{
 		compteur_diag++;
+		if ((x+i+1 >= 0) && (x+i+1 < largeur) && (y+i+1 >= 0) && (y+i+1 < hauteur) && (map[x+i][y+i] == *s) && (map[x+i+1][y+i+1] == *s))
+		{
+			compteur_diag_bas = 1;
+		}
 		i++;
 	}
-	while ((x+j >= 0) && (x+j < largeur) && (y+j >=0) && (y+j < hauteur) && ((map[x+j][y+j] == 'X') || (map[x+j][y+j] == 'O') || (map[x+j][y+j] == *s)))
+	while ((compteur_diag_haut != 1) && ((x+j >= 0) && (x+j < largeur) && (y+j >=0) && (y+j < hauteur) && ((map[x+j][y+j] == 'X') || (map[x+j][y+j] == 'O') || (map[x+j][y+j] == *s))))
 	{
 		compteur_diag++;
+		if ((x+j-1 >= 0) && (x+j-1 < largeur) && (y+j-1 >= 0) && (y+j-1 < hauteur) && (map[x+j][y+j] == *s) && (map[x+j-1][y+j-1] == *s))
+		{
+			compteur_diag_haut = 1;
+		}
 		j--;
 	}
 	if (compteur_diag >= 5)
 	{
+		printf("alignement diag possible joueur %d (%d, %d)\n", joueur, x, y);
+
 		return 0;
 	}
 
-	/* alignement possible sur une antidiagonale ? */
-	int compteur_antidiag;
+	// alignement possible sur une antidiagonale ? 
+	int compteur_antidiag, compteur_antidiag_haut, compteur_antidiag_bas;
 	compteur_antidiag = 0;
+	compteur_antidiag_haut = 0;
+	compteur_antidiag_bas = 0;
 	i = 0;
 	j = -1;
-	while ((x-i >= 0) && (x-i < largeur) && (y+i >=0) && (y+i < hauteur) && ((map[x-i][y+i] == 'X') || (map[x-i][y+i] == 'O') || (map[x-i][y+i] == *s)))
+	while ((compteur_antidiag_bas != 1) && ((x-i >= 0) && (x-i < largeur) && (y+i >=0) && (y+i < hauteur) && ((map[x-i][y+i] == 'X') || (map[x-i][y+i] == 'O') || (map[x-i][y+i] == *s))))
 	{
 		compteur_antidiag++;
+		if ((x-(i+1) >= 0) && (x-(i+1) < largeur) && (y+i+1 >= 0) && (y+i+1 < hauteur) && (map[x-i][y+i] == *s) && (map[x-(i+1)][y+i+1] == *s))
+		{
+			compteur_antidiag_bas = 1;
+		}
 		i++;
 	}
-	while ((x-j >= 0) && (x-j < largeur) && (y+j >=0) && (y+j < hauteur) && ((map[x-j][y+j] == 'X') || (map[x-j][y+j] == 'O') ||  (map[x-j][y+j] == *s)))
+
+	while ((compteur_antidiag_haut != 1) && ((x-j >= 0) && (x-j < largeur) && (y+j >=0) && (y+j < hauteur) && ((map[x-j][y+j] == 'X') || (map[x-j][y+j] == 'O') || (map[x-j][y+j] == *s))))
 	{
 		compteur_antidiag++;
+		if ((x-(j-1) >= 0) && (x-(j-1) < largeur) && (y+j-1 >= 0) && (y+j-1 < hauteur) && (map[x-j][y+j] == *s) && (map[x-(j-1)][y+j-1] == *s))
+		{
+			compteur_antidiag_haut = 1;
+		}
 		j--;
 	}
 	if (compteur_antidiag >= 5)
 	{
+		printf("alignement antidiag possible joueur %d (%d, %d)\n", joueur, x, y);
+
 		return 0;
 	}
 
-	/* aucun alignement possible */
+	// aucun alignement possible 
 	return 1;
 }
+
+
+
 
 // #############################################################################################################
 // is_fin_du_jeu 
@@ -430,45 +527,33 @@ int alignement5possible(partie *p, int x, int y, int joueur){
 // retourne 0 sinon
 
 int is_fin_de_partie(partie *p){
-	int largeur, hauteur;
+	int largeur, hauteur, test;
 	int i, j, k;
 	largeur = p->l;
 	hauteur = p->h;
+	test = 0; // ce n'est pas la fin de la partie
 
 	/* on parcourt la map : pour chaque case et pour chaque joueur, on teste si ce joueur peut aligner au moins 5 croix */
-	for (i=0 ; i < hauteur ; i++)
+
+	for (k = 1 ; k <= p->nbjoueurs ; k++)
 	{
-		for (j=0 ; j< largeur  ; j++)
+		p->canplay[k-1] = 0;
+		for (i=0 ; i < hauteur ; i++)
 		{
-			for (k = 1 ; k <= p->nbjoueurs ; k++)
+			for (j=0 ; j< largeur  ; j++)
 			{
 				if (alignement5possible(p, j, i, k) == 0)
 				{
 					// le joueur k peut aligner 5 croix autour de la case (i, j)
 					// mise à jour de canplay
-					p->canplay[k-1] = 1;
-				}
-				else 
-				{
-					// le joueur k ne peut pas aligner 5 croix autour de la case (i, j)
-					// mise à jour de canplay
-					p->canplay[k-1] = 0;
-				}
+					p->canplay[k-1]++;
+					test = 0;
+				}				
 			}
 		}
 	}
 
-	/* on parcourt canplay pour vérifier si au moins un joueur peut encore jouer */
-	int compteur;
-	compteur = 0;
-	for (k = 0; k < p->nbjoueurs ; k++)
-	{
-		if (p->canplay[k] == 1)
-		{
-			compteur++;
-		}
-	}
-	if ((compteur == 0) || (p->nbcoup >= p->nbcoupmax))
+	if ((test == 1) || (p->nbcoup >= p->nbcoupmax))
 	{ 
 		// c'est la fin de la partie
 		return 1;
@@ -492,7 +577,7 @@ int joueur_suivant(partie *p, int joueur){
 	{
 		for (i = 0 ; i < p->nbjoueurs ; i++)
 		{ 
-			if (p->canplay[i] == 1)
+			if (p->canplay[i] > 0)
 			{
 				return (i+1);
 			}
@@ -502,7 +587,7 @@ int joueur_suivant(partie *p, int joueur){
 	// on regarde le tableau à partir du joueur joueur+1 (donc canplay[joueur])
 	for (i = joueur ; i < p->nbjoueurs ; i++)
 	{
-		if (p->canplay[i] == 1)
+		if (p->canplay[i] > 0)
 		{
 			return (i+1);
 		}
@@ -510,7 +595,7 @@ int joueur_suivant(partie *p, int joueur){
 	// si on est arrivé à la fin du tableau et qu'aucun joueur ne peut encore jouer, on revient au début
 	for (i = 0 ; i < joueur ; i++)
 	{
-		if (p->canplay[i] == 1)
+		if (p->canplay[i] > 0)
 		{
 			return (i+1);
 		}
@@ -563,6 +648,7 @@ int play(partie *p, int x, int y, int joueur)
 			calcul_score(p, joueur);
 			printf("          joueur %d : alignement de 5 : (%d, %d)\n", joueur, x, y); 
 		}
+
 
 		if (is_fin_de_partie(p) == 1)
 		{
@@ -689,7 +775,7 @@ void affiche_score(int * score, int nbjoueurs)
 int main(){
   
   partie *p;
-  p = init(6, 7, 3, 40); 
+  p = init(6, 7, 3, 100); 
   printf("largeur : %d\n", p->l);
   printf("hauteur : %d\n", p->h);
   printf("nombre de joueurs : %d\n", p->nbjoueurs); 
@@ -697,8 +783,9 @@ int main(){
   
   affiche_map(getmap(p), p->l, p->h);
   affiche_score(p->score, p->nbjoueurs);
-*/
-  /*
+  */
+/*
+  
   printf(" ######################## \n");
   play(p, 0, 0, 1);
   play(p, 1, 1, 2);
@@ -732,31 +819,31 @@ int main(){
   play(p, 5, 6, 2);
   affiche_map(getmap(p), p->l, p->h);
   play(p, 1, 6, 3);
-  play(p, 2, 6, 2);
+  play(p, 2, 6, 1);
   affiche_map(getmap(p), p->l, p->h);
   affiche_score(p->score, p->nbjoueurs);
  
    
   printf(" ######################## \n");
-  play(p, 5, 0, 1);
-  play(p, 4, 1, 2);
-  play(p, 2, 3, 3);
-  play(p, 1, 4, 1);
+  play(p, 5, 0, 2);
+  play(p, 4, 1, 3);
+  play(p, 2, 3, 1);
+  play(p, 1, 4, 2);
   affiche_map(getmap(p), p->l, p->h);
-  play(p, 3, 2, 2); 
-  play(p, 4, 2, 2); 
+  play(p, 3, 2, 3); 
+  play(p, 4, 2, 1); 
   
   affiche_map(getmap(p), p->l, p->h);
   affiche_score(p->score, p->nbjoueurs);
 
   printf(" ######################## \n");
-  play(p, 5, 1, 3);
-  play(p, 5, 2, 1);
-  play(p, 5, 3, 2);
+  play(p, 5, 1, 2);
+  play(p, 5, 2, 3);
+  play(p, 5, 3, 1);
   affiche_map(getmap(p), p->l, p->h);
-  play(p, 5, 4, 3);
-  play(p, 5, 3, 1); 
-  play(p, 5, 5, 3);  
+  play(p, 5, 4, 2);
+  play(p, 5, 3, 3); 
+  play(p, 5, 5, 1);  
   
 */
 
@@ -773,7 +860,10 @@ int main(){
   play(p, 4, 2, 2);  
   play(p, 2, 2, 3);  
   play(p, 2, 5, 3);  
-  play(p, 2, 6, 3); 
+  play(p, 2, 6, 1); 
+  play(p, 2, 7, 2); 
+  play(p, 2, 8, 1); 
+
   play(p, 5, 2, 3);
    
   play(p, 5, 5, 1);  
@@ -787,8 +877,7 @@ int main(){
   play(p, 4, 3, 1); 
   play(p, 4, 5, 2); 
   play(p, 4, 1, 3);
-  */
-/*
+  
   play(p, 5, 1, 3);
   play(p, 5, 3, 1);
   play(p, 0, 5, 2);
@@ -807,28 +896,27 @@ int main(){
   printf("la map est : %s\n", getmap(p));
   affiche_map(getmap(p), p->l, p->h);
 
-  play(p, 4, 3, 2);
-  play(p, 4, 4, 3);
-  play(p, 4, 5, 1);
-  play(p, 4, 1, 3);
+  play(p, 1, 0, 2);
+  play(p, 3, 0, 1);
   play(p, 4, 0, 3);
+
   printf("la map est : %s\n", getmap(p));
   affiche_map(getmap(p), p->l, p->h);
 
   play(p, 3, 5, 1);
-*/
- /*
+
   printf("la map est : %s\n", getmap(p));
   affiche_map(getmap(p), p->l, p->h);
 
 
-
+  printf("canplay : 1 : %d ; 2 : %d ; 3 : %d\n", p->canplay[0], p->canplay[1], p->canplay[2]);
 
   affiche_score(p->score, p->nbjoueurs);
-  //printf("le vainqueur est le joueur %d avec un score de %d\n", getvainqueur(p), getscore(p, getvainqueur(p)));
+  printf("le vainqueur est le joueur %d avec un score de %d\n", getvainqueur(p), getscore(p, getvainqueur(p)));
  
   return 0;
 }
 */
+
 
 
