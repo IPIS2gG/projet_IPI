@@ -161,7 +161,17 @@ void launch_game(struct param_partie* infos)
 					if(r<=0)
 					{
 						printf("Erreur : client (%d) déconnecté\n", tab_stream[joueur_courant]);
-						exit(-1);
+						//on retire ce joueur de la table, et on change de joueur
+						tab_stream.erase(tab_stream.begin()+joueur_courant);
+						joueur_precedant=joueur_courant;
+						joueur_courant=joueur_suivant(part, joueur_courant);
+						if(joueur_courant==joueur_precedant)
+						{
+							//c'était le dernier joueur
+							print("Erreur : plus de joueurs connectés");
+							stop=true;
+						}
+
 					}
 					printf("Joueur courant [%s - %d] (stream %d) a parlé -->",
 													tab_pseudo[joueur_courant],
@@ -228,7 +238,7 @@ void launch_game(struct param_partie* infos)
 							if(r<=0)
 							{
 								printf("Erreur : client déconnecté (%d)\n", tab_stream[i]);
-								exit(-1);
+								tab_stream.erase(tab_stream.begin()+i);
 							}
 							printf("   ERREUR : socket %d a parlé -->", tab_stream[i]);
 							write(1, buff_read, r);
@@ -247,7 +257,7 @@ void launch_game(struct param_partie* infos)
 	//envoi à tous des scores finaux [BOURINAGE]
 	buff=(char*) calloc(15, sizeof(char));
 	print("Envoi des données de victoire\n");
-	sprintf(buff, "W %s", joueur_gagnant);
+	sprintf(buff, "W %d", joueur_gagnant);
 
 	n=strlen(buff)+1;
 	for(i=0; i<=tab_stream.size(); ++i)

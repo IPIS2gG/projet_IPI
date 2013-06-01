@@ -221,7 +221,7 @@ int main(int argc, char** argv)
 		if(bind(sock_client, (struct sockaddr*) &mes_infos, sizeof(mes_infos))<0)
 		{
 			fprintf(stderr,"Erreur -> bind : %s\n", msg_err);
-			cont=
+			cont=1;
 		}
 	}
 	
