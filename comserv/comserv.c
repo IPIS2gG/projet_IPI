@@ -67,8 +67,22 @@ pthread_mutex_t lock_connect; //bloquera l'entrée dans la partie -> chacun son 
 //############### Fonction Main #################
 //###############################################
 
+bool aff_debug;
+
 int main(int argc, char** argv)
 {
+	if(argc!=1 && argc!=2)
+	{ print("Erreur : argument -d pour afficher les infos de debug\n");exit(-1);}
+	aff_debug=false;
+	if(argc==2)
+	{
+		if(strcmp(argv[1], "-r")!=0)
+		{
+			fprintf(stderr, "Erreur : argument %s non reconnu\n", argv[1]);
+			exit(-1);
+		}
+		aff_debug=true;
+	}
 	//gestion clients
 	int sock_client;
 	unsigned int mon_port; //mes infos de connection pour attendre clients
@@ -150,7 +164,7 @@ int main(int argc, char** argv)
 	flush();
 	authserv.sin_port=htons(port_cible_authserv);
 	
-	print("Initialisation de la connexion ...\n");
+	print("Initialisation de la connexion à authserv ...\n");
 	
 	//création du socket
 	sock_authserv=socket(AF_INET, SOCK_STREAM, 0);
@@ -195,7 +209,7 @@ int main(int argc, char** argv)
 	mes_infos.sin_family=AF_INET;
 	mes_infos.sin_addr.s_addr=INADDR_ANY;
 	
-	print("Initialisation ...\n");
+	print("Initialisation du serveur ...\n");
 	
 	//création du socket
 	sock_client=socket(AF_INET, SOCK_STREAM, 0);
@@ -252,26 +266,31 @@ int main(int argc, char** argv)
 		exit(-1); //on ne peut pas continuer
 	}
 	
-	print("Thread principal : attente du début de la partie ....\n");
+	if(aff_debug)
+	{print("Thread principal : attente du début de la partie ....\n");}
+
 	pause();
-	print("Thread printicpal reprend la main\n");
-	print("Fermeture des connection ouvertes inutiles\n");
+
+	if(aff_debug){
+		print("Thread printicpal reprend la main\n");
+		print("Fermeture des connection ouvertes inutiles\n");
+	}
 	for(it_stream=tab_stream.begin(); it_stream!=tab_stream.end(); ++it_stream)
 	{
-		printf("   fermeture socket %d\n", *it_stream);
+		if(aff_debug){printf("   fermeture socket %d\n", *it_stream);}
 		close(*it_stream);
 	}
-	print("Destruction des threads\n");
+	if(aff_debug){print("Destruction des threads\n");}
 	for(it_thread=tab_thread.begin(); it_thread!=tab_thread.end(); ++it_thread)
 	{
-		printf("   fermeture thread d'ID %d ...\n", it_thread->first);
+		if(aff_debug){printf("   fermeture thread d'ID %d ...\n", it_thread->first);}
 		pthread_cancel(it_thread->second);
 	}
-	print("   fermeture thread écoute clients\n");
+	if(aff_debug){print("   fermeture thread écoute clients\n");}
 	pthread_cancel(thread_accept);
-	print("   fermeture thread écoute de authserv\n");
+	if(aff_debug){print("   fermeture thread écoute de authserv\n");}
 	pthread_cancel(thread_auth);
-	print("   destruction mutex\n");
+	if(aff_debug){print("   destruction mutex\n");}
 	pthread_mutex_destroy(&lock_connect);
 	
 	launch_game(&info_partie); //lancement du jeu avec les infos
@@ -315,9 +334,11 @@ void* thread_accept_connection(void* param)
 	cont=1;
 	while(cont!=0) //boucle d'acceptation des connections
 	{
-		print("Attente de connexion ...\n");
+		if(aff_debug){print("Attente de connexion ...\n");}
 		sock_client_stream=accept(sock_client, (struct sockaddr*) &client, &sizeof_client);
-		printf("Connexion détectée => stream[%d]\n", sock_client_stream);fflush(stdout);
+		if(aff_debug){
+			printf("Connexion détectée => stream[%d]\n", sock_client_stream);
+			fflush(stdout);}
 		if(sock_client_stream<0)
 		{
 			fprintf(stderr,"La connexion a échoué : %s\n", msg_err);
@@ -356,7 +377,7 @@ void* thread_accept_connection(void* param)
 				}
 				else
 				{
-					print("Connexion OK\n");
+					if(aff_debug){print("Connexion OK\n");}
 					id++;
 				}
 			}
@@ -414,29 +435,33 @@ void* thread_connection_client(void * param)
 	tab_stream->insert(sock_client_stream);
 	
 	//affichage de mes infos
-	print("   Nouvelle connexion ");
-	aff_thread_info(id, &client);
-	print("\n"); fflush(stdout);
+	if(aff_debug){
+		print("   Nouvelle connexion ");
+		aff_thread_info(id, &client);
+		print("\n"); fflush(stdout);}
 	
 	//###### CONNEXION ###############
 	//on attends sa demande de connexion
 	r=read(sock_client_stream, buff_read, 50);
 	if(r<=0)
 	{
-		printf("   Connexion avec le client perdue : %s", msg_err);
-		aff_thread_info(id, &client);
-		print(" \n");
+		if(aff_debug){
+			printf("   Connexion avec le client perdue : %s", msg_err);
+			aff_thread_info(id, &client);
+			print(" \n");}
 		close(sock_client_stream);
 		tab_thread->erase(id);
 		tab_stream->erase(sock_client_stream);
 		return NULL;
 	}
 	//affichage reception
+	if(aff_debug){
 	print("   ");
 	aff_thread_info(id, &client);
 	print(" reçoit -->");
 	write(1, buff_read, r);
-	printf("<-- (%d char.) \n", r);
+	printf("<-- (%d char.) \n", r);}
+
 	//traitement protocole
 	type_rep=buff_read[0];
 	if(type_rep!='C')
@@ -451,19 +476,25 @@ void* thread_connection_client(void * param)
 	}
 	//extraction informations
 	sscanf(buff_read, "%*c %16s %16s", pseudo, mdp);
-	print("   ");
-	aff_thread_info(id, &client);
-	printf(" means type=%c pseudo='%s' mdp='%s'\n", type_rep, pseudo, mdp);
-	fflush(stdout);
+
+	if(aff_debug){
+		print("   ");
+		aff_thread_info(id, &client);
+		printf(" means type=%c pseudo='%s' mdp='%s'\n", type_rep, pseudo, mdp);
+		fflush(stdout);}
+
 	//création de l'envoi à authserv
 	sprintf(buff_write, "%c %d %s %s", type_rep, id, pseudo, mdp);
 	n=strlen(buff_write)+1;
+
 	//affichage des données envoyées
-	print("   ");
-	aff_thread_info(id, &client);
-	print(" envoi à authserv -->");
-	write(1, buff_write, n);
-	printf("<-- (%d char.) \n", n);
+	if(aff_debug){
+		print("   ");
+		aff_thread_info(id, &client);
+		print(" envoi à authserv -->");
+		write(1, buff_write, n);
+		printf("<-- (%d char.) \n", n);}
+
 	//envoi proporement dit
 	if(write(sock_authserv, buff_write, n)!=n)
 	{
@@ -475,18 +506,22 @@ void* thread_connection_client(void * param)
 		tab_stream->erase(sock_client_stream);
 		return NULL;
 	}
-	print("   ");
-	aff_thread_info(id, &client);
-	print(" -> données en envoyées !\n");
+	if(aff_debug){
+		print("   ");
+		aff_thread_info(id, &client);
+		print(" -> données en envoyées !\n");
 	//######## ATTENTE REPONSE AUTHSERV
-	print("   ");
-	aff_thread_info(id, &client);
-	print(" -> attente de réponse ...\n");
+		print("   ");
+		aff_thread_info(id, &client);
+		print(" -> attente de réponse ...\n");}
+
 	pause(); //on attends de recevoir un signal (SIGUSR1) pour regarder dans notre buff la réponse
 	//normalement, réponse de athserv dans tab_comm[id]
-	print("   ");
-	aff_thread_info(id, &client);
-	print(" -> réveillé !\n");
+	if(aff_debug){
+		print("   ");
+		aff_thread_info(id, &client);
+		print(" -> réveillé !\n");}
+
 	it_comm=tab_comm->find(id); //recherche du message
 	if(it_comm==tab_comm->end())
 	{
@@ -502,19 +537,25 @@ void* thread_connection_client(void * param)
 	rep_comm=it_comm->second;
 	tab_comm->erase(id); //on supprime ma boite de reception (j'ai l'adresse qu'elle contenait)
 	r=strlen(rep_comm)+1;
-	//affichage reception
-	print("   ");
-	aff_thread_info(id, &client);
-	print(" réponse authserv (transmis) -->");
-	write(1, rep_comm, r);
-	printf("<-- (%d char.) \n", r);
+
+	if(aff_debug){
+		//affichage reception
+		print("   ");
+		aff_thread_info(id, &client);
+		print(" réponse authserv (transmis) -->");
+		write(1, rep_comm, r);
+		printf("<-- (%d char.) \n", r);}
+
 	//extraction infos
 	sscanf(rep_comm, "%c %*d %c", &type_rep, &char_rep);
 	free(rep_comm);
 	rep_comm=NULL;
-	print("   ");
-	aff_thread_info(id, &client);
-	printf(" means type=%c rep='%c'\n", type_rep, char_rep);
+
+	if(aff_debug){
+		print("   ");
+		aff_thread_info(id, &client);
+		printf(" means type=%c rep='%c'\n", type_rep, char_rep);}
+
 	if(type_rep!='c' || (char_rep!='0' && char_rep!='A' && char_rep!='J'))
 	{
 		print("   ");
@@ -529,31 +570,35 @@ void* thread_connection_client(void * param)
 	{
 		//joueur, pas d'admin
 		char_rep='W'; //on doit dire au client de repasser
-		print("   ");
-		aff_thread_info(id, &client);
-		print(" pas d'admin -> W\n");
+		if(aff_debug){
+			print("   ");
+			aff_thread_info(id, &client);
+			print(" pas d'admin -> W\n");}
 	}
 	if(char_rep=='A')
 	{
 		//on est admin !!!
 		admin=true;
-		print("   ");
-		aff_thread_info(id, &client);
-		print(" est maintenant admin !\n");
+		if(aff_debug){
+			print("   ");
+			aff_thread_info(id, &client);
+			print(" est maintenant admin !\n");}
 	}
 	
 	//réponse au client
 	sprintf(buff_write, "%c %c", type_rep, char_rep);
 	write(sock_client_stream, buff_write, strlen(buff_write)+1); //envoi de la rep au client
-	print("   ");
-	aff_thread_info(id, &client);
-	print(" réponse au client envoyée\n");
+	if(aff_debug){
+		print("   ");
+		aff_thread_info(id, &client);
+		print(" réponse au client envoyée\n");}
 	
 	if(char_rep=='0') //mes id étaient incorrect =>fini pour moi
 	{
-		print("   Fin de connexion ");
-		aff_thread_info(id, &client);
-		print("\n");
+		if(aff_debug){
+			print("   Fin de connexion ");
+			aff_thread_info(id, &client);
+			print("\n");}
 	
 		close(sock_client_stream); //fermeture de la connexion
 		tab_thread->erase(id); //on s'enlève de la table des threads
@@ -567,8 +612,10 @@ void* thread_connection_client(void * param)
 	if(char_rep=='W')
 	{
 		//le client devra se reconnecter => fin de cette connexion
+		if(aff_debug){
 		print("   Fin de connexion ");
-		aff_thread_info(id, &client);
+		aff_thread_info(id, &client);}
+
 		close(sock_client_stream); //fermeture de la connexion
 		tab_thread->erase(id); //on s'enlève de la table des threads
 		tab_stream->erase(sock_client_stream);
@@ -599,32 +646,35 @@ void* thread_connection_client(void * param)
 				fprintf(stderr, "Connexion à l'admin perdue, le programme doit fermer\n");
 				exit(-1);
 			}
-			printf("   Reçu de admin : -->");fflush(stdout);
-			write(1, buff_read, r);
-			printf("<-- (%d caract.)\n", r);
+
+			if(aff_debug){
+				printf("   Reçu de admin : -->");fflush(stdout);
+				write(1, buff_read, r);
+				printf("<-- (%d caract.)\n", r);}
+
 			switch(buff_read[0])
 			{
 				case 'A' ://Création nouvel user
 					//copy bète et mechante à authserv
-					print("   Admin : copié à authserv\n");
+					if(aff_debug){print("   Admin : copié à authserv\n");}
 					write(sock_authserv, buff_read, r);
 					break;
 				case 'N' :
 					//extraction des infos
 					sscanf(buff_read, "%*c %2d %2d %4d %2d", &w, &h,&nb_coups, &nb_max); //lecture de la réponse
-					printf("   Admin means : type:N w='%d' h='%d' nb_max='%d'\n",
-													w,h,nb_max);
+					if(aff_debug){printf("   Admin means : type:N w='%d' h='%d' nb_max='%d'\n",
+													w,h,nb_max);}
 					fflush(stdout);
 					info_partie->w=w;
 					info_partie->h=h;
 					info_partie->nb_coups=nb_coups;
 					info_partie->nb_max=nb_max;
-					print("   Admin : partie créée\n");
+					if(aff_debug){print("   Admin : partie créée\n");}
 					cont=false;
 					break;
 				default :
-					fprintf(stderr, "   Admin : erreur protocole\n");
-					fflush(stderr);
+					printf("   Admin : erreur protocole\n");
+					fflush(stdout);
 					break;
 			}
 		}
@@ -640,16 +690,19 @@ void* thread_connection_client(void * param)
 				fprintf(stderr, "Connexion à l'admin perdue, le programme doit fermer\n");
 				exit(-1);
 			}
+
+			if(aff_debug){
 			printf("   Reçu de admin : -->");fflush(stdout);
 			write(1, buff_read, r);
-			printf("<-- (%d caract.)\n", r);
+			printf("<-- (%d caract.)\n", r);}
+
 			switch(buff_read[0])
 			{
 				case 'p' :
 					//extraction des infos
 					sscanf(buff_read, "%*c %2d %1c", &int_rep, &char_rep); //lecture de la réponse
-					printf("   Admin means : type:p id='%d' rep='%c'\n",
-													int_rep, char_rep);
+					if(aff_debug){printf("   Admin means : type:p id='%d' rep='%c'\n",
+													int_rep, char_rep);}
 					fflush(stdout);
 					//on place la réponse dans la map de comm
 					buff_copy = (char*) calloc(r, sizeof(char)); 
@@ -659,15 +712,15 @@ void* thread_connection_client(void * param)
 					it_thread=tab_thread->find(int_rep);
 					if(it_thread==tab_thread->end())
 					{
-						fprintf(stderr, "   Admin : erreur protocole : id thread inconnu\n");
-						fflush(stderr);
+						printf("   Admin : erreur protocole : id thread inconnu\n");
+						fflush(stdout);
 						free(buff_copy);
 					}
 					else
 					{
-						print("   Admin : thread id ok\n");
+						if(aff_debug){print("   Admin : thread id ok\n");}
 						pthread_kill(it_thread->second, SIGUSR1);
-						print("   Admin : réponse transmise\n");
+						if(aff_debug){print("   Admin : réponse transmise\n");}
 					}
 					break;
 				case 'S' :
@@ -675,8 +728,7 @@ void* thread_connection_client(void * param)
 					pause(); //plus rien à faire ici, on va de toute manière être tué
 					break;
 				default :
-					fprintf(stderr, "   Admin : erreur protocole\n");
-					fflush(stderr);
+					print("   Admin : erreur protocole\n");
 					break;
 			}
 		}
@@ -689,12 +741,14 @@ void* thread_connection_client(void * param)
 		if((int) info_partie->tab_stream.size() >= info_partie->nb_max+1) 
 		{	//il n'y a déjà plus de place dans la partie
 			//on envoi directement au client le refus de l'admin
-			print("   ");
-			aff_thread_info(id, &client);
-			print(" -> partie complète : envoi refus admin\n");
-			print("   ");
-			aff_thread_info(id, &client);
-			print(" fin de connexion\n");
+			if(aff_debug){
+				print("   ");
+				aff_thread_info(id, &client);
+				print(" -> partie complète : envoi refus admin\n");
+				print("   ");
+				aff_thread_info(id, &client);
+				print(" fin de connexion\n");}
+
 			write(sock_client_stream, "J 0", 4);
 			close(sock_client_stream);
 			tab_thread->erase(id);
@@ -704,17 +758,20 @@ void* thread_connection_client(void * param)
 		
 		//demande d'acceptation à l'admin
 		sprintf(buff_write, "P %d %s", id, pseudo);
-		print("   ");
-		aff_thread_info(id, &client);
-		print(" -> envoi demande confirm admin ...\n");
+		if(aff_debug){
+			print("   ");
+			aff_thread_info(id, &client);
+			print(" -> envoi demande confirm admin ...\n");}
 		write(*sock_admin, buff_write, strlen(buff_write)+1);
-		print("   ");
-		aff_thread_info(id, &client);
-		print(" -> attente confirm admin ...\n");
+		if(aff_debug){
+			print("   ");
+			aff_thread_info(id, &client);
+			print(" -> attente confirm admin ...\n");}
 		pause(); //on attends ici une réponse de l'admin
-		print("   ");
-		aff_thread_info(id, &client);
-		print(" -> réveillé !\n");
+		if(aff_debug){
+			print("   ");
+			aff_thread_info(id, &client);
+			print(" -> réveillé !\n");}
 		it_comm=tab_comm->find(id);
 		if(it_comm==tab_comm->end())
 		{
@@ -730,11 +787,12 @@ void* thread_connection_client(void * param)
 		rep_comm=it_comm->second;
 		r=strlen(rep_comm)+1;
 		//affichage reception
-		print("   ");
-		aff_thread_info(id, &client);
-		print(" réponse admin (transmis) -->");
-		write(1, rep_comm, r);
-		printf("<-- (%d char.) \n", r);
+		if(aff_debug){
+			print("   ");
+			aff_thread_info(id, &client);
+			print(" réponse admin (transmis) -->");
+			write(1, rep_comm, r);
+			printf("<-- (%d char.) \n", r);}
 		//extraction infos
 		sscanf(rep_comm, "%c %*d %c", &type_rep, &char_rep);
 		free(rep_comm);
@@ -750,9 +808,10 @@ void* thread_connection_client(void * param)
 			return NULL;
 		}
 		//réponse au client
-		print("   ");
-		aff_thread_info(id, &client);
-		printf(" means type=%c rep='%c'\n", type_rep, char_rep);
+		if(aff_debug){
+			print("   ");
+			aff_thread_info(id, &client);
+			printf(" means type=%c rep='%c'\n", type_rep, char_rep);}
 		
 		if(char_rep=='1') //Accepté
 		{
@@ -765,9 +824,10 @@ void* thread_connection_client(void * param)
 				//il reste une place
 				//on accepte le joueur
 				write(sock_client_stream, "J 1", 4); //envoi au client
-				print("   ");
-				aff_thread_info(id, &client);
-				print(" joueur accepté dans la partie\n");
+				if(aff_debug){
+					print("   ");
+					aff_thread_info(id, &client);
+					print(" joueur accepté dans la partie\n");}
 				
 				//ajout du joueur dans la partie
 				info_partie->tab_stream.push_back(sock_client_stream);
@@ -784,12 +844,13 @@ void* thread_connection_client(void * param)
 		}
 		//joueur refusé, soit parce que refusé, soit plus de place
 		write(sock_client_stream, "J 0", 4); //envoi au client
-		print("   ");
-		aff_thread_info(id, &client);
-		print(" joueur refusé dans la partie\n");
+		if(aff_debug){
+			print("   ");
+			aff_thread_info(id, &client);
+			print(" joueur refusé dans la partie\n");}
 	}
 	
-	print("   Fin de connexion ");
+	if(aff_debug){print("   Fin de connexion ");}
 	aff_thread_info(id, &client);
 	
 	close(sock_client_stream); //fermeture de la connexion
@@ -829,17 +890,20 @@ void* thread_connection_authserv(void * param)
 			fprintf(stderr, "Connexion à authserv perdue, le programme doit fermer\n");
 			exit(-1);
 		}
-		printf("      Reçu de authserv : -->");fflush(stdout);
-		write(1, buff_read, r);
-		printf("<-- (%d caract.)\n", r);
+
+		if(aff_debug){
+			printf("      Reçu de authserv : -->");fflush(stdout);
+			write(1, buff_read, r);
+			printf("<-- (%d caract.)\n", r);}
 		
 		switch(buff_read[0])
 		{
 			case 'c' :
 				//réponse à une demande de connexion
 				sscanf(buff_read, "%*c %2d %1c", &int_rep, &char_rep); //lecture de la réponse
-				printf("      Authserv (format protocole) : type:c id='%d' rep='%c'\n", int_rep, char_rep);
-				fflush(stdout);
+				if(aff_debug){
+					printf("      Authserv (format protocole) : type:c id='%d' rep='%c'\n", int_rep, char_rep);
+					fflush(stdout);}
 				//on place la réponse dans la map de comm
 				buff_copy = (char*) calloc(r, sizeof(char)); 
 				strncpy(buff_copy, buff_read, r);
@@ -854,9 +918,9 @@ void* thread_connection_authserv(void * param)
 				}
 				else
 				{
-					print("      Authserv : thread id ok\n");
+					if(aff_debug){print("      Authserv : thread id ok\n");}
 					pthread_kill(it_thread->second, SIGUSR1);
-					print("      Authserv : réponse transmise\n");
+					if(aff_debug){print("      Authserv : réponse transmise\n");}
 				}
 				break;
 			case 'a' :
@@ -868,12 +932,11 @@ void* thread_connection_authserv(void * param)
 				{
 					//copie bête et méchante
 					write(*sock_admin, buff_read, r);
-					print("      Authserv => envoyé à l'admin\n");
+					if(aff_debug){print("      Authserv => envoyé à l'admin\n");}
 				}
 				break;
 			default :
-				fprintf(stderr, "      Authserv : erreur protocole\n");
-				fflush(stderr);
+				print("      Authserv : erreur protocole\n");
 				break;
 		}
 	}
