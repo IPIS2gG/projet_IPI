@@ -1,3 +1,17 @@
+/****************************************************/
+/*        Projet IPI S2 - 2013 : puissance 5        */
+/*                                                  */
+/*                    Groupe 4.2                    */
+/*                     Groupe G                     */
+/*          Nathalie Au,  Lewin Alexandre,          */
+/*        Beaume Jérémy et Métraud Alexandre        */
+/*                                                  */
+/*                      COMUSER                     */
+/*                fonctions_utiles.c                */
+/*                 Fonctions utiles                 */
+/*           (créé par Métraud Alexandre)           */
+/****************************************************/
+
 #include <stdlib.h>
 #include <stdio.h>
 

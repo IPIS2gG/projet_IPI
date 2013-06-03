@@ -1,0 +1,80 @@
+Dossier de réalisation - Partie Client (COMUSER)
+
+
+
+
+Introduction
+
+   La partie client est compilée sous forme d'un exécutable qui permet de se loguer en mode administrateur pour effectuer les tâches administrateur, ou en mode joueur pour jouer une partie.
+
+  Cette partie, que nous avons appelé COMUSER, a été presque intégralement réalisée par Métraud Alexandre. Beaume Jérémy a créé les deux fenêtres administrateur et leur implémentation a ensuite été modifiée par Métraud Alexandre pour les implémenter dans son code.
+
+   Outre son fonctionnement qui est séparé en deux branches évennementielles -une pour le joueur et une pour l'administrateur- cette partie est également séparée en deux au niveau de l'implémentation. En effet, tout ce qui précède le jeu a été réalisé avec l'aide de la bibliothèque GTK+ pour gérer la connexion des joueurs, ou la partie administrateur, et l'affichage du jeu en lui-même a été réalisé en utilisant la bibliothèque SDL.
+
+   Une structure globale est définie dans le fichier comuser.h. Une instance de cette structure sera créée au début de la fonction main, dans le fichier comuser.c, et sera transmise en paramètre de la plupart des fonctions. Cette structure permet de retenir certains éléments, comme des informations sur les fenêtres GTK, ou sur le dernier message reçu.
+
+   La gestion de la connexion et de la réception des messages a été réalisée dans un fichier à part, fonctions_connexions.c, qui peut être identifié au proto_client.c de l'énoncé.
+
+   Les fonctions implémentant le déroulement du programme et l'interaction avec les fenêtres GTK+ et l'interface graphique se trouvent dans les fichiers comuser.c, fonctions_joueur.c et fonctions admin.c.
+
+   Les fonctions pour la gestion des fenêtres GTK+ se trouvent dans les fichiers fonctions_fenetres.c et admin_windows.c.
+
+   Le fichier fonctions_utiles.c détermine des fonctions simples (concaténation de chaînes de caractères, conversion d'entier vers chaîne de caractère) pour une meilleure factorisation du code.
+
+   La partie affichage SDL est encapsulée. Son implémentation se trouve dans le fichier interface_graphique.c. Le fichier interface_graphique_parametres.h contient des paramètres pour l'affichage (dans quel dossier trouver les images, la couleurs des pseudonymes des joueurs, etc...). Enfin, le fichier interface_graphique.h détermine les fonctions accessibles de l'extérieur. Les images et la police de caractères utilisées se trouvent dans le dossier Images.
+
+   Un makefile est fournit pour compiler le tout.
+
+   Cette documentation fournit une description brève des fonctions et le fonctionnement global de la partie client. Pour des informations plus détaillées sur l'implémentation des fonctions, leurs paramètres, etc., se rapporter aux commentaires en code_source, le point d'entrée du programme étant le fichier comuser.h.
+
+
+
+
+I) Structure globale
+
+   Afin de retenir certaines informations qui peuvent être utiles dans beaucoup de fonctions, une structure globale a été définie et instanciée dans la fonction main, et est passée en paramètre de toutes ces fonctions. Cette structure contient notamment :
+      - Une sous-structure pour chacune des quatres fenêtres, comportant l'adresse de la fenêtre, un booléen déterminant si la fenêtre est affichée ou cachée, les adresses des champs de texte pour récupérer l'information, et divers autres éléments...
+      - Une sous-structure qui retient les informations du dernier message reçu. Cette structure sera remplie à chaque message reçu par la fonction attendre_et_dechiffrer_message du fichier fonctions_connexion.c.
+      - Le socket.
+      - Le pseudo et numéro du joueur qui utilise le programme courant.
+      - Deux booléens qui déterminent le comportement du programme.
+
+
+
+
+II) Réception des messages
+
+   La réception des messages est assurée par la fonction attendre_et_dechiffrer_message du fichier fonctions_connexion.c.
+   Cette fonction appelle la fonction lire_mot du même fichier qui lit un mot sur le socket (séparé par des espaces ou '\0').
+   Cette fonction vérifie ensuite que la connexion avec le socket est toujours effective, et que le message reçu est valide (sinon on coupe la connexion avec le socket et on revient à la fenêtre principale).
+   Enfin, elle place les différentes informations reçu dans la structure globale pour que ces dernières puissent être récupérées après.
+
+
+
+
+III) Déroulement du programme
+
+   Cette partie décrit le déroulement pas à pas du programme. Lors d'une erreur, ou de la fermeture d'une fenêtre par l'utilisateur, le programme reprend à la fenêtre principale en affichant le message d'erreur correspondant.
+
+   1) Initialisation : on instancie la structure globale et on initialise cette instance avec les valeurs que l'on souhaite, puis on crée les fenêtres grâce à la fonction creer_fenetres du fichier fonctions_fenetres.c.
+
+   2) Fenêtre principale : Affichage de la fenêtre de connexion. Cette dernière demande à l'utilisateur de rentrer ses informations de connexion (ip, port, login et mot de passe). Lors du clic sur le bouton valider, on appelle la fonction authentification du fichier comuser.c et on passe à l'étape suivante.
+
+   3) Tentative de connexion : La fonction authentification fait appel à la fonction connexion du fichier fonctions_connexion.c. Elle change d'abord de fenêtre et affiche la fenêtre connexion, qui affiche simplement un message d'attente. La fonction authentification appelle ensuite la fonction connexion du fichier fonctions_connexion.c dernière récupère les informations de connexion rentrées par l'utilisateur, et après vérifications tente de se connecter au serveur. Si la connexion est effectuée, on passe à l'étape suivante.
+
+   4) Attente d'authentification : La fonction authentification envoie ensuite au serveur la commande "C login mot_de_passe" pour demander à s'authentifier. On attend une réponse pour savoir si l'utilisateur est authentifié. Si la réponse est "c A", l'utilisateur est authentifié en tant qu'Admin et on passe à l'étape 7 avec la fonction traitement_admin du fichier fonctions_admin.c. Si la réponse est "c J", l'utilisateur est authentifié en tant que joueur et on passe à l'étape 5 avec la fonction attente_validation_joueur du fichier fonctions_joueur.c.
+
+   5) (Joueur) Attente de validation par l'administrateur : On attend que l'administrateur valide le joueur. Si on reçoit le message "J 1", on passe à l'étape suivante avec la fonction attente_debut_partie_joueur du même fichier.
+
+   6) (Joueur) Attente de début de partie : On attend le début de la partie. Si on reçoit le message "s nombre_de_colonnes nombre_de_lignes nombre_de_joueurs pseudos_des_joueurs", on recherche le pseudo du joueur courant dans la liste des pseudos pour connaître le numéro du joueur courant avec la fonction trouver_numero_joueur du même fichier. Puis on quitte la boucle GTK+, on détruit les fenêtres avec la fonction detruire_fenetres du fichier fonctions_fenetre.c. Enfin, on passe à l'étape 9 avec la fonction traitement_jeu du même fichier.
+
+   7) (Admin) Création d'utilisateurs ou de partie : on cache la fenêtre connexion, et on affiche la fenêtre pre_game. Il y a deux boutons sur cette fenêtre. Le premier sert à créer un utilisateur avec le login et mot de passe rentrés dans le champs et le deuxième sert à créer une partie avec les paramètres rentrés dans les champs.
+      Lors de la création d'un utilisateur, la fonction signal_create_user du fichier admin_windows.c est appelée. Celle-ci vérifie que les valeurs rentrées dans les champs sont correctes et appelle la fonction creer_utilisateur du fichier fonctions_admin.c. Celle-ci envoie le message "A pseudo mot_de_passe", et interdit l'administrateur de créer un nouveau joueur (en désensibilisant le bouton) tant qu'il n'y a pas eu de réponse. On attend une réponse en parallèle avec la fonction attendre_validation_creation_utilisateur du fichier fonctions_admin. Si la réponse est "a 1", on affiche que l'utilisateur a été créé et on permet à nouveau à l'administrateur de créer un utilisateur.
+      Lors de la création d'une partie, la fonction signal_create_game du fichier admin_windows.c est appelée. Celle-ci vérifie que les valeurs rentrées dans les champs sont correctes et appelle la fonction creer_jeu du fichier fonctions_admin.c. Celle-ci envoie le message "N nombre_de_colonnes nombre_de_lignes nb_joueurs_max nb_coups_max". On cache la fenêtre pre_game, on affiche la fenêtre accept_joueur, et on passe à l'étape suivante.
+
+   8) On attend la demande de joueurs avec la fonction attendre_reception_demandes_joueurs du fichier fonctions_admin.c. A la réception d'un message "P id pseudo", on ajoute la demande à la fenêtre avec la fonction add_demande du fichier admin_windows.c. L'utilisateur peut ensuite cliquer sur accepter ou refuser pour accepter ou refuser le joueur. En cas d'acceptation, on envoie le message "p id 1".
+      Lors du clic sur le bouton de lancement de partie, on envoie le message "S". Le serveur répondra alors "s nombre_de_colonnes nombre_de_lignes nombre_de_joueurs pseudos_des_joueurs", et on lance la partie en spectateur (on ne jouera jamais) : on passe à l'étape 9.
+
+   9) Gestion du jeu : on lance l'interface SDL avec la fonction initialisation_SDL du fichier interface_graphique.c. Puis on attend des messages commençant par "T" ou "W".
+      Si on reçoit un message du type "T joueur_qui_doit_joueur joueur_dont_le_score_a_changé nouveau_score nouvelle_map", on affiche les changements avec la fonction update_sdl du fichier interface_graphique.c, puis on vérifie si c'est à notre tour de jouer. Si c'est le cas, on demande au joueur de jouer, avec la fontion a_toi_de_jouer du fichier interface_graphique.c, puis on récupère le coup qu'il a joué, et on envoie "P x y".
+      Si on reçoit un message du type "W joueur qui a gagné", on affiche un message de victoire grâce à la fonction victoire du fichier interface_graphique.c, on attend que le joueur valide, et on revient à la fenêtre principale.

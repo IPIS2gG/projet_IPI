@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include "interface_graphique.h"
 
+#define true 1
+#define false 0
+typedef short bool;
 
 int main(int argc, char** argv)
 {
@@ -130,20 +133,20 @@ int main(int argc, char** argv)
 
 
   //Mise à jour avec la map d'exemple
-  update_sdl(1, "5", desc_map);
-  update_sdl(2, "15", desc_map);
+  update_sdl(2, 1, "15", desc_map);
+  update_sdl(0, 8, "5", desc_map);
 
   a_toi_de_jouer(&x, &y, desc_map);
 
   desc_map[((y * nb_case_col_map_recu) + x)] = 'D';
 
-  update_sdl(3, "15", desc_map);
+  update_sdl(3, 3, "15", desc_map);
 
   a_toi_de_jouer(&x, &y, desc_map);
 
   desc_map[((y * nb_case_col_map_recu) + x)] = 'X';
 
-  update_sdl(3, "6", desc_map);
+  update_sdl(3, 4, "6", desc_map);
 
   attendre_clic_croix();
 
@@ -151,7 +154,11 @@ int main(int argc, char** argv)
 
   desc_map[((y * nb_case_col_map_recu) + x)] = 'D';
 
-  update_sdl(9, "79", desc_map);
+  update_sdl(9, 5, "79", desc_map);
+
+  attendre_clic_croix();
+
+  victoire(3);
 
   attendre_fermeture_sdl();
 

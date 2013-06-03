@@ -1,22 +1,21 @@
-/***************************************************/
-/*      Projet  IPI S2 - 2013 : puissance 5        */
-/*                    Groupe G                     */
-/*          Nathalie Au, Lewin Alexandre,          */
-/*       Beaume Jérémy et Métraud Alexandre        */
-/*                   Groupe 4.2                    */
-/*           COMUSR, interface graphique           */
-/***************************************************/
+/****************************************************/
+/*        Projet IPI S2 - 2013 : puissance 5        */
+/*                                                  */
+/*                    Groupe 4.2                    */
+/*                     Groupe G                     */
+/*          Nathalie Au,  Lewin Alexandre,          */
+/*        Beaume Jérémy et Métraud Alexandre        */
+/*                                                  */
+/*                      COMUSER                     */
+/*              interface_graphique.c               */
+/*     Implémentation de l'interface graphique      */
+/*           (créé par Métraud Alexandre)           */
+/****************************************************/
 
-/*
-  Ce fichier comporte des tests sur l'interface graphique du client.
-  La fenêtre graphique en jeu est séparée en deux parties : la map et la liste des joueurs
-*/
+//Remarque : La fenêtre graphique en jeu est séparée en troisparties : la liste des joueurs, la map, et le menu
 
-/*Commande pour compiler avec la SDL
-gcc -pthread -Wall -o interface_graphique interface_graphique.c -lSDLmain -lSDL -lSDL_ttf
-gcc -Wall -o interface_graphique interface_graphique.c `sdl-config --cflags --libs`
-*/
 
+//Bibliothèques nécéessaires
 #include <stdlib.h>
 #include <stdio.h>
 #include <SDL/SDL.h>
@@ -27,6 +26,10 @@ int XInitThreads();
 //Liste des fichiers images nécessaires et des paramètres
 #include "interface_graphique_parametres.h"
 
+//Prototypes des fonctions accessibles de l'extérieur (pour vérifications de types)
+#include "interface_graphique.h"
+
+//Macros et defines
 #define GUILLEMETS(x) #x
 #define FICHIER(chemin,nom_fichier) GUILLEMETS(chemin/nom_fichier)
 #define IMAGE(x) FICHIER(DOSSIER_IMAGES,x)
@@ -125,7 +128,7 @@ int nb_case_lig_map;
 
 
 
-//Prototypes et hiérarchie des fonctions (seules les fonctions non-indentées sont utilisables de l'extérieur.
+//Prototypes et hiérarchie des fonctions (seules les fonctions non-indentées sont utilisables de l'extérieur).
 int initialisation_sdl(int, char**, int, int);
   void demarrage();
     void chargement_images();
@@ -142,20 +145,24 @@ int initialisation_sdl(int, char**, int, int);
   void init_menu(int);
   void affiche();
 
-int update_sdl(int, char*, char*);
+int update_sdl(int, int, char*, char*);
   int update_score(int, int, char*);
   //int draw_cases_map(char*);
-  //void affiche()
+  //void affiche();
+
+void victoire(int);
+  //int update_score(int, int, char*, bool);
+  //void affiche();
 
 void a_toi_de_jouer(int*, int*, char*);
   void* switch_message(void*);
   int check_mouse(bool, int*, int*, int, int, char*);
 
 void attendre_fermeture_sdl();
+void attendre_clic_croix();
+void attendre_clic_croix_ou_changement_etat (short*, void (*f) (void*));
 
 void arret_sdl();
-
-void pause_sdl(); //TODO rm
 
 
 
@@ -544,19 +551,7 @@ void calcul_tailles()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+//Fonction d'initialisation des zones affichées.
 int init_zones(char** pseudos)
 {
   int res;
@@ -642,6 +637,7 @@ int init_zones(char** pseudos)
 
 
 
+
 //Initialisation de la liste des joueurs
 void init_liste_joueurs(char** pseudos)
 {
@@ -672,7 +668,7 @@ void init_liste_joueurs(char** pseudos)
     hauteur_cadre_s + HAUTEUR_AVANT + (hauteur_max + HAUTEUR_MILIEU) * nb_joueurs - HAUTEUR_MILIEU + HAUTEUR_APRES + largeur_cadre_d,
     32, 0, 0, 0, 0);
 
-  draw_scores_liste_joueurs(0);
+  draw_scores_liste_joueurs(9);
 }
 
 
@@ -713,6 +709,7 @@ void init_scores(char** pseudos)
 
 
 
+//Affiche le cadre autour de la liste des joueurs
 void draw_cadre_liste_joueurs()
 {
   SDL_Rect position;
@@ -773,8 +770,7 @@ void draw_cadre_liste_joueurs()
 
 
 
-
-
+//Affiche les scores en mettant une case_tontour devant le joueur passé en paramètre.
 void draw_scores_liste_joueurs(int indice_joueur_dont_cest_le_tour)
 {
   int i, y;
@@ -1108,7 +1104,7 @@ int draw_cases_map(char* desc_map)
 
 
 
-
+//Initialisation de la zone menu
 void init_menu(int hauteur_menu)
 {
   SDL_Rect position;
@@ -1133,6 +1129,7 @@ void init_menu(int hauteur_menu)
 
 
 
+//Rafraîchit l'affichage.
 void affiche()
 {
   SDL_Rect position;
@@ -1158,12 +1155,11 @@ void affiche()
 
 
 
-
-int update_sdl(int joueur_dont_cest_le_tour, char* nouveau_score, char* desc_nouvelle_map)
+//Fonction de mise à jour de l'affichage avec de nouvelles informations :
+//  Changement de tour, changement du score d'un joueur, changement de map.
+int update_sdl(int joueur_dont_cest_le_tour, int joueur_a_updater, char* nouveau_score, char* desc_nouvelle_map)
 {
   int res = 0;
-  int joueur_a_updater = joueur_dont_cest_le_tour - 1;
-  if (joueur_a_updater < 0) joueur_a_updater = nb_joueurs - 1;
   printf("Joueur dont c'est le tour (indice) : %d   Joueur a updater (indice) : %d\n", joueur_dont_cest_le_tour, joueur_a_updater);
 
   if (!initialise)
@@ -1174,6 +1170,7 @@ int update_sdl(int joueur_dont_cest_le_tour, char* nouveau_score, char* desc_nou
 
   res += update_score(joueur_a_updater, joueur_dont_cest_le_tour, nouveau_score);
   res += draw_cases_map(desc_nouvelle_map);
+
   affiche();
 
   return res;
@@ -1184,6 +1181,7 @@ int update_sdl(int joueur_dont_cest_le_tour, char* nouveau_score, char* desc_nou
 
 
 
+//Mise à jour des scores avec un nouveau score
 int update_score(int joueur_a_updater, int joueur_dont_cest_le_tour, char* nouveau_score)
 {
   int i, j;
@@ -1207,8 +1205,8 @@ int update_score(int joueur_a_updater, int joueur_dont_cest_le_tour, char* nouve
 
   if (j == 1)
   {
-    score_a_updater[i - 2] = ' ';
-    score_a_updater[i - 1] = nouveau_score[0];
+  score_a_updater[i - 2] = ' ';
+  score_a_updater[i - 1] = nouveau_score[0];
   }
   else if (j == 2)
   {
@@ -1224,8 +1222,10 @@ int update_score(int joueur_a_updater, int joueur_dont_cest_le_tour, char* nouve
   SDL_FreeSurface(scores_affiches[joueur_a_updater]);
   scores_affiches[joueur_a_updater] = TTF_RenderText_Blended(police, scores[joueur_a_updater], couleur_joueur[joueur_a_updater]);
 
+
   draw_cadre_liste_joueurs();
   draw_scores_liste_joueurs(joueur_dont_cest_le_tour);
+
   return 0;
 }
 
@@ -1233,12 +1233,60 @@ int update_score(int joueur_a_updater, int joueur_dont_cest_le_tour, char* nouve
 
 
 
+//Fonctions d'affichage de victoire.
+void victoire (int winner)
+{
+  bool liberer_case_tontour = false;
+  SDL_Surface* temp;
+  SDL_Rect position;
+
+  //On remplace l'affichage de case tontour par un affichage de case victoire
+  temp = case_tontour;
+  if((case_tontour = SDL_LoadBMP(IMAGE(CASE_VICTOIRE))))
+  {
+    if (hauteur_case != case_tontour->h)
+    {
+      fprintf(stderr,"Problème de compatibilité des hauteurs de case pour la case victoire.\nTaille attendue : %dpx, taille effective : %dpx.\n", hauteur_case, case_tontour->h);
+      SDL_FreeSurface(case_tontour);
+      case_tontour = temp;
+    }
+    else if (largeur_case != case_tontour->w)
+    {
+      fprintf(stderr,"Problème de compatibilité des hauteurs de case pour la case victoire.\nTaille attendue : %dpx, taille effective : %dpx.\n", largeur_case, case_tontour->w);
+      SDL_FreeSurface(case_tontour);
+      case_tontour = temp;
+    }
+    else
+    {
+      liberer_case_tontour = true;
+    }
+  }
+  else
+  {
+    fprintf(stderr, "Erreur d'ouverture de l'image CASE_VICTOIRE");
+    case_tontour = temp;
+  }
+
+  draw_scores_liste_joueurs(winner);
+
+  //Affichage du bouton valider
+  position.x = menu->w - LARGEUR_APRES_VALIDER - largeur_bouton_valider;
+  position.y = menu->h - HAUTEUR_APRES_VALIDER - hauteur_bouton_valider;
+  SDL_BlitSurface(bouton_valider_dispo, NULL, menu, &position); //Bouton valider dispo
+
+  if (liberer_case_tontour)
+  {
+    SDL_FreeSurface(case_tontour);
+    case_tontour = temp;
+  }
+
+  affiche();
+}
 
 
 
-
-
-
+//Fonction de tour de jeu.
+//  Le coup sélectionné sera enregistré dans res_x et res_y.
 void a_toi_de_jouer(int* res_x, int* res_y, char* desc_map)
 {
   int continuer = 1;
@@ -1305,10 +1353,7 @@ void a_toi_de_jouer(int* res_x, int* res_y, char* desc_map)
 
 
 
-
-
-
-
+//Thread de "clignotement" du titre de la fenêtre
 void* switch_message(void* pas_utilise)
 {
   while(1)
@@ -1323,11 +1368,8 @@ void* switch_message(void* pas_utilise)
 
 
 
-
-
-
-
-
+//Fonction de vérification après clic de la souris.
+//  Si le clic est valide, les coordonnées de la case choisie sont enregistrés dans res_x et res_y
 int check_mouse(bool selection, int* res_x, int* res_y, int souris_x, int souris_y, char* desc_map)
 {
   int balayage_x = LARGEUR_AVANT_LISTE + liste_joueurs->w + LARGEUR_ENTRE_LISTE_MAP + largeur_bordure_g;
@@ -1419,9 +1461,7 @@ int check_mouse(bool selection, int* res_x, int* res_y, int souris_x, int souris
 
 
 
-
-
-
+//Fonction d'attente de clic sur la croix pour fermer le programme.
 void attendre_fermeture_sdl()
 {
   if (!initialise)
@@ -1447,6 +1487,7 @@ void attendre_fermeture_sdl()
 
 
 
+//Fonction d'attente de clic sur la croix, pour sortir de la fonction.
 void attendre_clic_croix()
 {
   if (!initialise)
@@ -1470,6 +1511,42 @@ void attendre_clic_croix()
 }
 
 
+
+//Fonction d'attente de clic sur la croix ou bouton valider, pour sortir de la fonction.
+void attendre_clic_croix_ou_bouton_valider()
+{
+  if (!initialise)
+  {
+    fprintf(stderr, "Lancement de attendre_clic_croix sans initialisation.\n");
+    return;
+  }
+
+  bool continuer = true;
+  SDL_Event event;
+
+  while (continuer)
+  {
+    SDL_WaitEvent(&event);
+    switch(event.type)
+    {
+      case SDL_QUIT:
+        continuer = false;
+      break;
+      case SDL_MOUSEBUTTONUP:
+        if (event.button.button == SDL_BUTTON_LEFT
+           && ecran->w - LARGEUR_APRES_VALIDER - largeur_bouton_valider <= event.motion.x
+           && event.motion.x <= ecran->w - LARGEUR_APRES_VALIDER
+           && ecran->h - HAUTEUR_APRES_VALIDER - hauteur_bouton_valider <= event.motion.y
+           && event.motion.y <= ecran->h - HAUTEUR_APRES_VALIDER)
+          continuer = false;
+      break;
+    }
+  }
+}
+
+
+
+//Fonction d'attente de clic sur la croix. Si fermer_thread passe à true, la fonction g_thread_exit est exécutée.
 void attendre_clic_croix_ou_changement_etat(bool* fermer_thread, void (*g_thread_exit)(void*))
 {
   if (!initialise)
@@ -1500,9 +1577,7 @@ void attendre_clic_croix_ou_changement_etat(bool* fermer_thread, void (*g_thread
 
 
 
-
-
-
+//Fonction d'arrêt "propre" de la SDL, en désallouant les ressourses.
 void arret_sdl()
 {
   if (!initialise) return;
@@ -1529,6 +1604,7 @@ void arret_sdl()
   SDL_FreeSurface(croisement);
   SDL_FreeSurface(case_vide);
   SDL_FreeSurface(case_cochee);
+  SDL_FreeSurface(case_tontour);
   for(i=0; i<9; i++) SDL_FreeSurface(case_joueur[i]);
   for(i=0; i< nb_joueurs; i++) free(scores[i]);
   for(i=0; i< nb_joueurs; i++) SDL_FreeSurface(scores_affiches[i]);

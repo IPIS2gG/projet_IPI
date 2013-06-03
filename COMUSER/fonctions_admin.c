@@ -1,21 +1,43 @@
+/****************************************************/
+/*        Projet IPI S2 - 2013 : puissance 5        */
+/*                                                  */
+/*                    Groupe 4.2                    */
+/*                     Groupe G                     */
+/*          Nathalie Au,  Lewin Alexandre,          */
+/*        Beaume Jérémy et Métraud Alexandre        */
+/*                                                  */
+/*                      COMUSER                     */
+/*                 fonctions_admin.c                */
+/*        Fonctions de gestion administrateur       */
+/*           (créé par Métraud Alexandre)           */
+/****************************************************/
+
+
+//Inclusion du header global, à regarder en premier
 #include "comuser.h"
 
-void traitement_admin (struct toutes_les_fenetres* m)
+
+//Point d'entrée du traitement administrateur
+//  Cache la fenêtre connexion et affiche la fenêtre pre_game
+void traitement_admin (struct main* m)
 {
   printf("Début du traitement admin.\n");
 
+  gdk_threads_enter();
   gtk_widget_hide (m->fenetre_connexion.adresse);
   m->fenetre_connexion.open = false;
 
-  gdk_threads_enter();
   gtk_widget_show_all(m->fenetre_pre_game.adresse);
-  gdk_threads_leave();
   m->fenetre_pre_game.open = true;
+  gdk_threads_leave();
 }
 
 
 
-void creer_utilisateur (struct toutes_les_fenetres* m, const char* login, const char* mdp)
+//Fonction de création d'utilisateur, appelée lors d'un clic sur le bouton valider de la partie "créer utilisateur" de la fenêtre pre_game
+//  Envoie un message de demande de création d'utilisateur avec le login et mot de passe fournis (les vérifications d'intégrité ont déjà été faites).
+//  Désensibilise le bouton d'acceptation, et crée un thread d'attente de réponse.
+void creer_utilisateur (struct main* m, const char* login, const char* mdp)
 {
   char* message_envoye;
   int i;
@@ -35,9 +57,11 @@ void creer_utilisateur (struct toutes_les_fenetres* m, const char* login, const 
 
 
 
+//Fonction d'attente de réponse suite à une demande de création d'un utilisateur.
+//  Dans les deux cas, sensibilise le bouton à nouveau.
 void* attendre_validation_creation_utilisateur (void* arg)
 {
-  struct toutes_les_fenetres* m = (struct toutes_les_fenetres*) arg;
+  struct main* m = (struct main*) arg;
   char* message;
 
   m->fenetre_pre_game.param_create_user.thread_ouvert = true;
@@ -87,8 +111,11 @@ void* attendre_validation_creation_utilisateur (void* arg)
 
 
 
-
-void creer_jeu (struct toutes_les_fenetres* m, int hauteur, int largeur, int nombre_de_joueurs, int nombre_de_coups)
+//Fonction de création de jeu, appelée lors d'un clic sur le bouton valider de la partie "créer jeu" de la fenêtre pre_game
+//  Envoie un message de demande de création de jeu avec les paramètres fournis (les vérifications d'intégrité ont déjà été faites).
+//  Cache la fenêtre pre_game et ouvre la fenêtre accept_joueur.
+//  Crée un thread d'attente de demande d'acceptation de la part des joueurs.
+void creer_jeu (struct main* m, int hauteur, int largeur, int nombre_de_joueurs, int nombre_de_coups)
 {
   char* message_envoye;
   int i;
@@ -113,9 +140,12 @@ void creer_jeu (struct toutes_les_fenetres* m, int hauteur, int largeur, int nom
 
 
 
+//Thread d'attente de demande d'acceptation de la part des joueurs.
+//  Réceptionne les demandes de joueurs et les envoie à la fonction add_demande du fichier admin_windows.c qui les traite.
+//  Si le signal s est reçu, la partie commence : on demande l'ouverture de la SDL, on ferme la boucle GTK+, et ce thread.
 void* attendre_reception_demandes_joueurs (void* arg)
 {
-  struct toutes_les_fenetres* m = (struct toutes_les_fenetres*) arg;
+  struct main* m = (struct main*) arg;
 
   while (1)
   {

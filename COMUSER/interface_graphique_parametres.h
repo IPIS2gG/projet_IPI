@@ -1,3 +1,17 @@
+/****************************************************/
+/*        Projet IPI S2 - 2013 : puissance 5        */
+/*                                                  */
+/*                    Groupe 4.2                    */
+/*                     Groupe G                     */
+/*          Nathalie Au,  Lewin Alexandre,          */
+/*        Beaume Jérémy et Métraud Alexandre        */
+/*                                                  */
+/*                      COMUSER                     */
+/*         interface_graphique_parametres.h         */
+/*Header pour les parametres de l'interface graphique*/
+/*           (créé par Métraud Alexandre)           */
+/****************************************************/
+
 //Liste des fichiers images nécessaires et des paramètres
 #define DOSSIER_IMAGES Images
 
@@ -65,6 +79,7 @@
 #define CASE_DERNIERE_JOUEE case_derniere_jouee.bmp
 #define CASE_TONTOUR case_tontour.bmp
 #define CASE_SELECTIONNEE case_selectionnee.bmp
+#define CASE_VICTOIRE case_victoire.bmp
 #define CASE_JOUEUR_1 case_joueur_1.bmp
 #define CASE_JOUEUR_2 case_joueur_2.bmp
 #define CASE_JOUEUR_3 case_joueur_3.bmp

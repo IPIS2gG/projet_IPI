@@ -1,10 +1,25 @@
+/****************************************************/
+/*        Projet IPI S2 - 2013 : puissance 5        */
+/*                                                  */
+/*                    Groupe 4.2                    */
+/*                     Groupe G                     */
+/*          Nathalie Au,  Lewin Alexandre,          */
+/*        Beaume Jérémy et Métraud Alexandre        */
+/*                                                  */
+/*                      COMUSER                     */
+/*                fonctions_connexion.c             */
+/*  Fonctions de gestion des communications réseau  */
+/*           (créé par Métraud Alexandre)           */
+/****************************************************/
+
+
 #include "comuser.h"
 
 
 
-
-
-void connexion (struct toutes_les_fenetres* m, char* login, char* mdp)
+//Fonction de connexion au réseau
+//  Vérifie que l'intégrité paramètres rentrés dans les champs, auquel cas tente de se connecter.
+void connexion (struct main* m, char* login, char* mdp)
 {
   G_CONST_RETURN gchar* ip_cible = gtk_entry_get_text(m->fenetre_principale.ip.entry);
 	short cont;
@@ -18,15 +33,17 @@ void connexion (struct toutes_les_fenetres* m, char* login, char* mdp)
   int erreur = 0;
 
 
-  printf("_________________TEST changement instruction : %p\n", m->fenetre_connexion.instruction);
-
   gdk_threads_enter();
   gtk_label_set_text(m->fenetre_principale.instruction, "Tentative de connexion. Veuillez patienter s'il vous plaît...");
 
-	cible.sin_family=AF_INET;
+  cible.sin_family=AF_INET;
 
 
   printf("Clic sur le bouton \"Valider\".\nInformations rentrées :\n");
+
+
+  //Vérifications d'intégrité
+
   printf("   IP : %s\n", ip_cible);
   cont=inet_aton(ip_cible, (struct in_addr*) &cible.sin_addr);
   if (cont)
@@ -99,8 +116,6 @@ void connexion (struct toutes_les_fenetres* m, char* login, char* mdp)
   gtk_widget_show_all (m->fenetre_connexion.adresse);
   m->fenetre_connexion.open = 1;
 
-  printf("_________________TEST changement instruction : %p\n", m->fenetre_connexion.instruction);
-
   gtk_label_set_text(m->fenetre_connexion.instruction, "Tentative de connexion.\nVeuillez patienter s'il vous plaît...");
   printf("\nTentative de connexion...\n");
 
@@ -155,7 +170,15 @@ void connexion (struct toutes_les_fenetres* m, char* login, char* mdp)
 
 
 
-void attendre_et_dechiffrer_message (struct toutes_les_fenetres* m, char commande_attendue)
+
+char* lire_mot (int sock, int* nb_lettres);
+char stoc (struct main*, int, char*, char*);
+int verifier_socket (struct main*, int, char*);
+
+//Fonction d'attente de message sur le socket et de décryptage du message.
+//  Sauf erreur de lecture, le message sera rentré dans m->mess
+//  La commande par exemple est rentrée dans m->mess.commande
+void attendre_et_dechiffrer_message (struct main* m, char commande_attendue)
 {
   int taille_mot;
   char* mot;
@@ -226,7 +249,7 @@ void attendre_et_dechiffrer_message (struct toutes_les_fenetres* m, char command
 
 
 
-
+    //Commande de validation de la création d'un utilisateur
     case 'a':
       m->mess.commande = 'a';
 
@@ -265,6 +288,8 @@ void attendre_et_dechiffrer_message (struct toutes_les_fenetres* m, char command
       break;
 
 
+
+    //Commande de demande d'acceptation d'un joueur
     case 'P':
       m->mess.commande = 'P';
 
@@ -407,16 +432,32 @@ void attendre_et_dechiffrer_message (struct toutes_les_fenetres* m, char command
       verifier_socket (m, taille_mot, mot);
 
       m->mess.joueur_dont_cest_le_tour = atoi(mot);
-      if (m->mess.joueur_dont_cest_le_tour < 1 || m->mess.joueur_dont_cest_le_tour > 9)
+      if (m->mess.joueur_dont_cest_le_tour < 1 || m->mess.joueur_dont_cest_le_tour > 10)
       {
         m->mess.commande = '\0';
-        m->mess.description_commande = concat_string_gfree(concat_string_gfree(concat_string_gfree(m->mess.description_commande, "numero de joueur ("), mot), ") non-valide.");
-        fprintf(stderr, "Recu message 'tour suivant' avec numero_de_joueur invalide : %s\n", mot);
+        m->mess.description_commande = concat_string_gfree(concat_string_gfree(concat_string_gfree(m->mess.description_commande, "numero de joueur qui joue ("), mot), ") non-valide.");
+        fprintf(stderr, "Recu message 'tour suivant' avec numero de joueur qui joue invalide : %s\n", mot);
         free(mot);
         retour_fenetre_connexion(m, m->mess.description_commande, false);
         return;
       }
 
+      free(mot);
+      mot = lire_mot(sock, &taille_mot);
+      verifier_socket (m, taille_mot, mot);
+
+      m->mess.joueur_score_update = atoi(mot);
+      if (m->mess.joueur_score_update < 1 || m->mess.joueur_score_update > 9)
+      {
+        m->mess.commande = '\0';
+        m->mess.description_commande = concat_string_gfree(concat_string_gfree(concat_string_gfree(m->mess.description_commande, "numero de joueur à updater ("), mot), ") non-valide.");
+        fprintf(stderr, "Recu message 'tour suivant' avec numero de joueur à updater invalide : %s\n", mot);
+        free(mot);
+        retour_fenetre_connexion(m, m->mess.description_commande, false);
+        return;
+      }
+
+      free(mot);
       mot = lire_mot(sock, &taille_mot);
       verifier_socket (m, taille_mot, mot);
 
@@ -458,16 +499,35 @@ void attendre_et_dechiffrer_message (struct toutes_les_fenetres* m, char command
 
 
 
-
+    //Commande de coup mal placé
     case 'M':
       m->mess.commande = 'M';
       break;
 
 
 
-
+    //Commande de fin de partie
     case 'W':
       m->mess.commande = 'W';
+
+      m->mess.description_commande = concat_string_gfree(m->mess.description_commande, "Fin de partie :\n   ");
+      printf("Commande reçue : %c\n", caractere);
+
+      mot = lire_mot(sock, &taille_mot);
+      verifier_socket (m, taille_mot, mot);
+
+      m->mess.winner = atoi(mot);
+      if (m->mess.winner < 1 || m->mess.joueur_dont_cest_le_tour > 9)
+      {
+        m->mess.commande = '\0';
+        m->mess.description_commande = concat_string_gfree(concat_string_gfree(concat_string_gfree(m->mess.description_commande, "numero de joueur à updater ("), mot), ") non-valide.");
+        fprintf(stderr, "Recu message 'tour suivant' avec numero de joueur à updater invalide : %s\n", mot);
+        free(mot);
+        retour_fenetre_connexion(m, m->mess.description_commande, false);
+        return;
+      }
+
+      printf("Recu message 'fin de partie' avec le numéro du gagnant = %d\n", m->mess.winner);
       break;
 
 
@@ -485,6 +545,12 @@ void attendre_et_dechiffrer_message (struct toutes_les_fenetres* m, char command
 
 
 
+//Fonction qui va lire un mot sur le socket.
+//  Ignore les espaces ou '\0' au début.
+//  Dès la lecture d'un autre caractère, lit jusqu'à la prochaine espace ou au prochain '\0'.
+//  Renvoie la chaîne lue après allocation.
+//  Place le nombre de lettres de cette chaîne, '\0' exclu, dans nb_lettres.
+//  Si la connexion avec le socket est perdue, place 0 dans nb_lettres. (cf verifier_socket ci-après)
 char* lire_mot (int sock, int* nb_lettres)
 {
   char buff[2];
@@ -525,10 +591,11 @@ char* lire_mot (int sock, int* nb_lettres)
 
 
 
-//Cette fonction converti une chaîne de caractère d'un caractère (+ éventuellement \0) en caractère.
+//Cette fonction convertit une chaîne de caractère d'un caractère (+ éventuellement \0) en caractère.
 //  Elle effectue préalablement les tests nécessaires, sur la taille du mot passée en paramètre
 //  Elle prend en paramètre la structure générale, la taille du mot, le mot, et une chaîne de caractère affichant les caractères attendus en cas d'erreur.
-char stoc (struct toutes_les_fenetres* m, int taille_mot, char* mot, char* desc_attendu)
+//  Elle fait appel à verifier_socket (voir ci-après) pour vérifier que la connexion avec le socket n'a pas été perdue.
+char stoc (struct main* m, int taille_mot, char* mot, char* desc_attendu)
 {
   //On vérifie que la connexion avec le socket n'a pas été perdue
   if(verifier_socket (m, taille_mot, mot)) return '\0';
@@ -551,9 +618,10 @@ char stoc (struct toutes_les_fenetres* m, int taille_mot, char* mot, char* desc_
 
 
 
-
-int verifier_socket (struct toutes_les_fenetres* m, int taille_mot, char* mot)
-{  
+//Fonction qui vérifie que la connexion avec le socket n'a pas été perdue.
+//  A appeler après lire_mot, en lui fournissant ce qu'a modifié lire_mot.
+int verifier_socket (struct main* m, int taille_mot, char* mot)
+{
   if (taille_mot == 0)
   {
     m->mess.commande = '\0';
