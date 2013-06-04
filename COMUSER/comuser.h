@@ -185,8 +185,8 @@ void arret (GtkWidget*, gpointer);
 
 //Fonctions principales
 //  Se trouvent dans comuser.c, avec la fonction main.
-void traitement_champs (GtkWidget*, gpointer);
-  void* authentification (void* arg);
+void signal_traitement_champs (GtkWidget*, gpointer);
+  void* thread_authentification (void* arg);
 
     //Fonctions pour la gestion côté joueur
     //  Se trouvent dans fonctions_joueur.c

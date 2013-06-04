@@ -16,7 +16,6 @@
 #include "comuser.h"
 
 
-
 //Fonction de connexion au réseau
 //  Vérifie que l'intégrité paramètres rentrés dans les champs, auquel cas tente de se connecter.
 void connexion (struct main* m, char* login, char* mdp)
@@ -180,6 +179,7 @@ int verifier_socket (struct main*, int, char*);
 //  La commande par exemple est rentrée dans m->mess.commande
 void attendre_et_dechiffrer_message (struct main* m, char commande_attendue)
 {
+  //PAS DE LOCK GTK
   int taille_mot;
   char* mot;
   char* temp_s;
@@ -199,10 +199,6 @@ void attendre_et_dechiffrer_message (struct main* m, char commande_attendue)
   //Réception des paramètres
   switch (caractere)
   {
-
-
-
-
     //Commande d'échec/réussite de la connexion.
     case 'c':
       m->mess.commande = 'c';

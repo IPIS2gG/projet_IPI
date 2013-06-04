@@ -22,6 +22,7 @@
 //  (et remplissage de la structure globale)
 void creer_fenetres (struct main* m)
 {
+    //LOCK GTK OK
   printf("Création des fenêtres.\n");
   creer_fenetre_principale(m);
   creer_fenetre_connexion(m);
@@ -40,6 +41,8 @@ void menu_item_new (GtkMenu*, const gchar*, GCallback, gpointer);
 //Fonction de création de la fenêtre principale
 void creer_fenetre_principale (struct main* m)
 {
+  //LOCK GTK OK
+
   GtkWidget *p_window = NULL;
     GtkWidget *p_main_box = NULL;
       GtkWidget *p_menu_bar = NULL;
@@ -81,25 +84,25 @@ void creer_fenetre_principale (struct main* m)
 
   /*Création du bouton Valider*/
   p_bouton_valider = gtk_button_new_from_stock (GTK_STOCK_OK); //gtk_button_new_with_label("Valider");
-  g_signal_connect (G_OBJECT (p_bouton_valider), "clicked", G_CALLBACK (traitement_champs), (gpointer) m);
+  g_signal_connect (G_OBJECT (p_bouton_valider), "clicked", G_CALLBACK (signal_traitement_champs), (gpointer) m);
   gtk_box_pack_end (GTK_BOX (p_box_boutons), p_bouton_valider, FALSE, FALSE, 0);
 
   //Création du champ de mot de passe
   m->fenetre_principale.mdp = add_new_champ_end("Mot de passe :", p_main_box, 0);
   gtk_entry_set_visibility(m->fenetre_principale.mdp.entry, FALSE);
-  g_signal_connect(GTK_OBJECT(m->fenetre_principale.mdp.entry), "activate", G_CALLBACK(traitement_champs), (gpointer) m);
+  g_signal_connect(GTK_OBJECT(m->fenetre_principale.mdp.entry), "activate", G_CALLBACK(signal_traitement_champs), (gpointer) m);
 
   //Création du champ de login
   m->fenetre_principale.login = add_new_champ_end("Login :", p_main_box, 0);
-  g_signal_connect(GTK_OBJECT(m->fenetre_principale.login.entry), "activate", G_CALLBACK(traitement_champs), (gpointer) m);
+  g_signal_connect(GTK_OBJECT(m->fenetre_principale.login.entry), "activate", G_CALLBACK(signal_traitement_champs), (gpointer) m);
 
   //Création du champ de port
   m->fenetre_principale.port = add_new_champ_end("Port :", p_main_box, 0);
-  g_signal_connect(GTK_OBJECT(m->fenetre_principale.port.entry), "activate", G_CALLBACK(traitement_champs), (gpointer) m);
+  g_signal_connect(GTK_OBJECT(m->fenetre_principale.port.entry), "activate", G_CALLBACK(signal_traitement_champs), (gpointer) m);
 
   //Création du champ de IP
   m->fenetre_principale.ip = add_new_champ_end("IP :", p_main_box, 16);
-  g_signal_connect(GTK_OBJECT(m->fenetre_principale.ip.entry), "activate", G_CALLBACK(traitement_champs), (gpointer) m);
+  g_signal_connect(GTK_OBJECT(m->fenetre_principale.ip.entry), "activate", G_CALLBACK(signal_traitement_champs), (gpointer) m);
 
   //Création de l'instruction
   p_instruction = gtk_label_new("Veuillez rentrer les informations pour vous connecter :");
@@ -113,6 +116,8 @@ void creer_fenetre_principale (struct main* m)
 //Fonction de création d'un élément Label : Champ Label_derreur.
 struct entry_label add_new_champ_end (char* nom_du_champ, GtkWidget* conteneur, int nb_car_max)
 {
+  //LOCK GTK OK
+
   GtkWidget* p_cont;
   GtkWidget* p_label;
   GtkWidget* p_entry;
@@ -145,10 +150,6 @@ void menu_item_new (GtkMenu *p_menu, const gchar *title, GCallback callback, gpo
   gtk_menu_shell_append (GTK_MENU_SHELL (p_menu), p_menu_item);
   g_signal_connect (G_OBJECT (p_menu_item), "activate", callback, user_data);
 }
-
-
-
-
 
 
 //Fonction de création de la fenêtre de connexion
@@ -185,9 +186,6 @@ void creer_fenetre_connexion (struct main* m)
 
 
 
-
-
-
 //Fonction de retour à la fenêtre principale
 //  Si la SDL n'est pas ouverte, on se contente de cacher toutes les fenêtres et d'afficher la fenêtre principale
 //  Si la SDL est ouverte, on la ferme, on recrée les fenêtres, et on affiche la fenêtre principale
@@ -195,6 +193,7 @@ void creer_fenetre_connexion (struct main* m)
 //  On libère cette chaîne de charactères si a_liberer = true
 void retour_fenetre_connexion(struct main* m, char* message_erreur, bool a_liberer)
 {
+  //PAS DE LOCK GTK
   printf("Fermeture de la connexion.\n");
   close(m->sock);
 
@@ -203,6 +202,9 @@ void retour_fenetre_connexion(struct main* m, char* message_erreur, bool a_liber
   if(!m->open_sdl)
   { //Si on est encore dans la phase pre-game :
     gdk_threads_enter();
+
+    //LOCK GTK OK
+    
     //On cache toutes les fenêtres
     gtk_widget_hide (m->fenetre_connexion.adresse);
     m->fenetre_connexion.open = 0;
@@ -304,9 +306,6 @@ void detruire_fenetres (struct main* m, GtkWidget* p)
     gtk_widget_destroy(m->fenetre_principale.adresse);
   }
 }
-
-
-
 
 
 

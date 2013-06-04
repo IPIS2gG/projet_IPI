@@ -20,6 +20,8 @@
 //  Si le joueur est validé, appelle attente_debut_partie_joueur ci-après.
 void attente_validation_joueur (struct main* m)
 {
+  //PAS DE LOCK GTK
+  //appelé depuis thread_authentification
   char* message_erreur = concat_string("Erreur :","\n   ");
   
   gdk_threads_enter();
@@ -40,6 +42,8 @@ void attente_validation_joueur (struct main* m)
         printf("échouée.\n");
         message_erreur = concat_string_gfree(message_erreur, "Echec de la connexion : l'administrateur vous a refusé.\nVous pouvez néanmoins retenter :");
         retour_fenetre_connexion(m, message_erreur, true);
+        //ferme le thread
+        return ;
         break;
 
         case 1 :
@@ -52,6 +56,7 @@ void attente_validation_joueur (struct main* m)
         printf("non comprise. ->%d<-\n", m->mess.accepte - 1);
         message_erreur = concat_string_bfree(message_erreur, m->mess.description_commande);
         retour_fenetre_connexion(m, message_erreur, true);
+        //ferme le thread
         return;
         break;
       }
@@ -61,6 +66,7 @@ void attente_validation_joueur (struct main* m)
       printf("Commande reçue non comprise ou reçue au mauvais moment : %s (attendu : commande J)\n", m->mess.description_commande);
       message_erreur = concat_string_gfree(message_erreur, m->mess.description_commande);
       retour_fenetre_connexion(m, message_erreur, true);
+      //ferme le thread
       return;
   }
 }
@@ -71,6 +77,9 @@ void attente_validation_joueur (struct main* m)
 //  Lorsque la partie commence : on demande l'ouverture de la SDL, on recherche son numéro de joueur grâce à trouver_numero_joueur ci-après, on ferme la boucle GTK+, et ce thread.
 void attente_debut_partie_joueur (struct main* m)
 {
+    //PAS DE LOCK GTK
+    //appelé depuis attente validation joueur
+
   gdk_threads_enter();
   gtk_label_set_markup(m->fenetre_connexion.instruction, "Validation par l'administrateur réussie !\nAttente de la création de la partie.\nVeuillez patienter s'il vous plaît...");
   gdk_threads_leave();
@@ -83,7 +92,7 @@ void attente_debut_partie_joueur (struct main* m)
   {
     case 's' :
       printf("\nCommande de création de partie.\n");
-      m->open_sdl = true;
+      m->open_sdl = true; //la fonction main sortira de gtk_main et lancera 
       trouver_numero_joueur(m);
       gdk_threads_enter();
       gtk_main_quit();
@@ -96,6 +105,7 @@ void attente_debut_partie_joueur (struct main* m)
     default :
       printf("Commande reçue non comprise ou reçue au mauvais moment : %s (attendu : commande s)", m->mess.description_commande);
       retour_fenetre_connexion(m, concat_string("Erreur :\n   ", m->mess.description_commande), true);
+      //termine le thread
       return;
   }
 }

@@ -17,10 +17,13 @@ programme : $(EXEC)
 
 OBJ=$(SRC:.c=.o)
 $(EXEC): $(OBJ)
-	$(CC) -o $@ $^ $(FLAGS);
+	@ echo linking ...
+	@ $(CC) -o $@ $^ $(FLAGS);
+	@ echo compilé !
 
 %.o: %.c
-	$(CC) -o $@ -c $< $(FLAGS);
+	@ echo compilation de $< ...
+	@ $(CC) -o $@ -c $< $(FLAGS);
 
 interface_graphique.o : interface_graphique.h
 comuser.h : interface_graphique.h
@@ -34,14 +37,14 @@ fonctions_admin.o : comuser.h
 tests : test_interface_graphique
 
 test_interface_graphique : interface_graphique.o test_interface_graphique.o
-	$(CC) -o $@ $^ $(FLAGS);
+	@ $(CC) -o $@ $^ $(FLAGS);
 
 test_interface_graphique.o : interface_graphique.h
 
 
 # Nettoyage
 clear:
-	rm *.o $(EXEC) test_interface_graphique;
+	@ rm *.o $(EXEC) test_interface_graphique;
 
 clean:
-	rm *.o;
+	@ rm *.o;

@@ -51,7 +51,9 @@ int main(int argc, char** argv)
     fprintf(stderr, "Erreur d'exécution de XInitThreads\n");
     exit(EXIT_FAILURE);
   }
+
   gdk_threads_enter();
+
   gdk_threads_init();
   gtk_init (&argc, &argv);
 
@@ -93,9 +95,6 @@ int main(int argc, char** argv)
 }
 
 
-
-
-
 //Fonction déclenchée lors de l'appui sur le bouton valider de la fenêtre principale
 //  Elle crée un nouveau thread qui éxécute la fonction authentification ci-après.
 //  Cette deuxième fonction va récupérer ce que l'utilisateur a rentré dans les champs de la fenêtre.
@@ -108,24 +107,29 @@ int main(int argc, char** argv)
 //  En cas de problème quelque part, on revient à la fenêtre principale en affichant ce qu'il s'est passé, grâce à la foncion retour_fenetre_connexion plus loin dans ce fichier.
 //    Remarque : même si ce ne sera pas toujours indiqué par la suite, la plupart des cas d'erreur sont traité ainsi, en revenant à la fenêtre principale.
 
-void traitement_champs (GtkWidget *p_widget, gpointer user_data)
+void signal_traitement_champs (GtkWidget *p_widget, gpointer user_data)
 {
+  //signal LOCK GTK OK
+  //appelé par la fenêtre de connexion lors d'un event de demande de co
+  //userdata : struct main*
+
   //Création d'un thread
-  g_thread_unref(g_thread_new("Authentification", authentification, user_data));
+  g_thread_unref(g_thread_new("Authentification", thread_authentification, user_data));
 
   /* Paramêtre inutilisé */
-  (void)p_widget;
+  //(void)p_widget;
 }
 
 
-void* authentification (void* arg)
+void* thread_authentification (void* arg)
 {
+    //thread : PAS DE LOCK GTK
   struct main* m = (struct main*) arg;
 
   if(!m->fenetre_principale.open)
   {
     fprintf(stderr, "Fonction de callback traitement_champs lancée avec fenêtre cachée.\n");
-    g_thread_exit(NULL);
+    g_thread_exit(NULL); //fermeture du thread
   }
 
   char* message_erreur = concat_string("Erreur :\n","");
@@ -163,6 +167,8 @@ void* authentification (void* arg)
         printf("échouée.\n");
         message_erreur = concat_string_gfree(message_erreur, "   Echec de la connexion.\nAvez-vous correctement rentré votre login et votre mot de passe ?\nVous pouvez néanmoins retenter :");
         retour_fenetre_connexion(m, message_erreur, true);
+        //termine le thread
+        return NULL;
         break;
 
         case 'J' :
