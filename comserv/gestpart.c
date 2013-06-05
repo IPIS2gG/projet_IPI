@@ -747,7 +747,6 @@ int is_fin_de_partie(partie *p)
 	/* on parcourt la grille : pour chaque joueur et pour chaque case vide, on teste si ce joueur peut aligner au moins 5 croix */
 	for (k = 1 ; k <= p->nbjoueurs ; k++)
 	{
-		int ret;
 		char s[1];
 		sprintf(s, "%d", k+1);
 
@@ -770,7 +769,7 @@ int is_fin_de_partie(partie *p)
 	// 2 conditions pour fin du jeu
 	// soit plus aucun joueur ne peut aligner 5 croix
 	// soit le nombre de coups maximal a été atteint
-	if ((test == 1) || (p->nbcoup >= p->nbcoupmax))
+	if ((test == 1) || (p->nbcoup >= p->nbcoupmax) || (p->nbcoup >= p->l*p->h))
 	{ 
 		// c'est la fin de la partie
 		return 1;

@@ -112,7 +112,10 @@ void launch_game(struct param_partie* infos)
 	{
 		//envoi du nouvel etat de jeu
 		if(stop)
-		{joueur_courant=10;}
+		{
+			joueur_precedant=joueur_courant;
+			joueur_courant=10;
+		}
 		if(aff_debug){print("Envoi à tous le nouvel etat de jeu\n");}
 		aff_map=getmap(part);
 		sprintf(buff, "T %d %d %d %s", joueur_courant,

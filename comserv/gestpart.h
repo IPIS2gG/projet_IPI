@@ -1,11 +1,16 @@
 typedef struct partie partie;
 
-partie * init(int, int, int);
+partie * init(int l, int h, int nb_joueur, int nbcoupmax);
 
-int play(partie *, int, int, int);
+int joueur_suivant(partie *, int joueur);
+
+int play(partie *, int x, int y, int joueur);
 
 void destroy(partie *);
 
 char * getmap(partie *);
+//alloué dynamiquement
 
-int getscore(partie *, int);
+int getscore(partie *, int joueur);
+
+int getvainqueur(partie *);

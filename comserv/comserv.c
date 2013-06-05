@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 	aff_debug=false;
 	if(argc==2)
 	{
-		if(strcmp(argv[1], "-r")!=0)
+		if(strcmp(argv[1], "-d")!=0)
 		{
 			fprintf(stderr, "Erreur : argument %s non reconnu\n", argv[1]);
 			exit(-1);
