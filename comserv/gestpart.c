@@ -639,7 +639,6 @@ int alignement5possible(partie *p, int x, int y, int joueur){
 		if (compteur_col >= 5)
 		{
 			// un alignement de 5 peut être réalisé par le joueur
-			//printf("alignement colonne possible joueur %d (%d, %d)\n", joueur, x, y);
 			return 0;
 		}
 	}
@@ -755,7 +754,7 @@ int is_fin_de_partie(partie *p)
 		{
 			for (j=0 ; j< largeur  ; j++)
 			{
-				if ((p->map[j][i] != *s) && (p->map[j][i] != 'X') && (alignement5possible(p, j, i, k) == 0))
+				if ((p->map[j][i] == 'O') && (alignement5possible(p, j, i, k) == 0))
 				{
 					// le joueur k peut aligner 5 croix autour de la case (i, j)
 					// mise à jour de canplay
@@ -769,7 +768,7 @@ int is_fin_de_partie(partie *p)
 	// 2 conditions pour fin du jeu
 	// soit plus aucun joueur ne peut aligner 5 croix
 	// soit le nombre de coups maximal a été atteint
-	if ((test == 1) || (p->nbcoup >= p->nbcoupmax) || (p->nbcoup >= p->l*p->h))
+	if ((test == 1) || (p->nbcoup >= p->nbcoupmax) || (p->nbcoup >= (p->l)*(p->h)))
 	{ 
 		// c'est la fin de la partie
 		return 1;

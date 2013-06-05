@@ -39,7 +39,8 @@ void launch_game(struct param_partie* infos)
 	char* aff_map;
 	
 	int joueur_courant=1;
-	int joueur_precedant=1;
+	int joueur_precedent=1;
+	int joueur_ecoute=-1;
 	
 	bool cont; //boucle principale
 	bool stop; //partie finie
@@ -65,7 +66,7 @@ void launch_game(struct param_partie* infos)
 	
 	if(aff_debug){
 		print("\n\n###############################\n\nDEBUT DE LA PARTIE\n\n");
-		printf("map : %d x %d\n", w, h);
+		printf("map : %d x %d   nb_coups : %d\n", w, h, nb_coups);
 		printf("Admin : %s [%d]\n", tab_pseudo[0], tab_stream[0]);
 		for(i=1; i<=nb_joueur; ++i)
 		{
@@ -113,14 +114,14 @@ void launch_game(struct param_partie* infos)
 		//envoi du nouvel etat de jeu
 		if(stop)
 		{
-			joueur_precedant=joueur_courant;
+			joueur_precedent=joueur_courant;
 			joueur_courant=10;
 		}
 		if(aff_debug){print("Envoi à tous le nouvel etat de jeu\n");}
 		aff_map=getmap(part);
 		sprintf(buff, "T %d %d %d %s", joueur_courant,
-									joueur_precedant,
-									getscore(part, joueur_precedant),
+									joueur_precedent,
+									getscore(part, joueur_precedent),
 									aff_map);
 		
 		
@@ -167,29 +168,43 @@ void launch_game(struct param_partie* infos)
 					fprintf(stderr, "Erreur : seclect %s\n", msg_err);
 					exit(-1);
 				}
+
+				joueur_ecoute=-1;
 			
 				//on regarde qui a parlé
 				if(FD_ISSET(tab_stream[joueur_courant], &readfs))
 				{
 					//joueur courant a parlé
-					fflush(stdout);
+					
+					if(aff_debug)
+						{printf("ecoute stream [%d] ...\n", tab_stream[joueur_courant]);fflush(stdout);}
+					joueur_ecoute=joueur_courant;
 					r=read(tab_stream[joueur_courant], buff_read, 50);
 					if(r<=0)
 					{
 						printf("Erreur : client (%d) déconnecté\n", tab_stream[joueur_courant]);
 						//on retire ce joueur de la table, et on change de joueur
+						close(tab_stream[joueur_courant]);
 						tab_stream[joueur_courant]=-1;
-						joueur_precedant=joueur_courant;
+						cont_waiting=false;
+						if(aff_debug)
+							{printf("boucle de recherche de joueur (precedant [%d])...\n", joueur_precedent);fflush(stdout);}
+						joueur_precedent=joueur_courant;
 						do
 						{
 							joueur_courant=joueur_suivant(part, joueur_courant);
+							printf("test joueur_courant [%d]\n", joueur_courant);
+							fflush(stdout);
 						}
-						while(tab_stream[joueur_courant]==-1 || joueur_courant==joueur_precedant);
+						while(tab_stream[joueur_courant]==-1 && joueur_courant!=joueur_precedent);
+
+						if(aff_debug)
+							{printf("fin boucle de recherche de joueur !!!\n");fflush(stdout);}
 
 							//on cherche un nouveau joueur tant que les joueurs suivants sont déco ou
 							//qu'on doit demander à celui qui vient de déco de rejouer
 						
-						if(joueur_courant==joueur_precedant)
+						if(joueur_courant==joueur_precedent)
 						{
 							//le prochain joueur qui peut jouer est celui qui vient de déco
 							print("Erreur : plus de joueurs connectés");
@@ -197,91 +212,111 @@ void launch_game(struct param_partie* infos)
 						}
 
 					}
-
-					if(aff_debug){
-						printf("Joueur courant [%s - %d] (stream %d) a parlé -->",
-														tab_pseudo[joueur_courant],
-														joueur_courant, tab_stream[joueur_courant]);
-						write(1, buff_read, r);
-						printf("<-- (%d char)\n", r);
-						fflush(stdout);}
-					//traitement
-					if(buff_read[0]!='P')
-					{
-						print("Erreur protocole [P x y] -> ignorée\n");
-					}
 					else
 					{
-						//Extraction des infos
-						sscanf(buff_read, "%*c %2d %2d", &x, &y);
-
 						if(aff_debug){
-							printf("Player joue en x=%d y=%d\n", x, y);}
-
-						ret_play=play(part, x,y,joueur_courant);
-
-						if(aff_debug){
-							printf("Gestpart répond %d\n", ret_play);
+							printf("Joueur courant [%s - %d] (stream %d) a parlé -->",
+															tab_pseudo[joueur_courant],
+															joueur_courant, tab_stream[joueur_courant]);
+							write(1, buff_read, r);
+							printf("<-- (%d char)\n", r);
 							fflush(stdout);}
-
-						switch(ret_play)
+						//traitement
+						if(buff_read[0]!='P')
 						{
-							case -1 :
-								//erreur de jeu
-								//[buf permet d'envoyer T joueur score map, donc M map ...]
-								aff_map=getmap(part);
-								sprintf(buff, "M %s", aff_map);
-								free(aff_map);
-								if(aff_debug){print("Envoi de 'M map' au joueur courant\n");}
-								write(tab_stream[joueur_courant], buff, strlen(buff)+1);
-								
-								if(aff_debug){
-									print("-->");
-									write(1, buff, strlen(buff)+1);
-									printf("<-- (%d char)\n", strlen(buff)+1);fflush(stdout);}
-								
-								//on laisse cont_waiting=true -> on attend toujours le même joueur
-								break;
-							case 0 :
-								if(aff_debug){print("Victoire d'un joueur\n");}
-								cont_waiting=false;
-								stop=true;
-								break;
-							default :
-								if(aff_debug){print("Coup correct\n");}
-
-								joueur_precedant=joueur_courant;
-								joueur_courant=ret_play;
-								if(aff_debug){
-								printf("Au joueur [%s - %d] de jouer !\n", tab_pseudo[joueur_courant],
-														tab_stream[joueur_courant]);}
-								cont_waiting=false;
-								break;
+							print("Erreur protocole [P x y] -> ignorée\n");
 						}
-					}
-						
-				}
-				else
-				{
-					for(i=0; i<tab_stream.size(); ++i)
-					{
-						if(FD_ISSET(tab_stream[i], &readfs))
+						else
 						{
-							fflush(stdout);
-							r=read(tab_stream[i], buff_read, 50);
-							if(r<=0)
-							{
-								printf("Erreur : client déconnecté (%d)\n", tab_stream[i]);
-								tab_stream[i]=-1;
-							}
+							//Extraction des infos
+							sscanf(buff_read, "%*c %2d %2d", &x, &y);
 
 							if(aff_debug){
-								printf("   ERREUR : socket %d a parlé -->", tab_stream[i]);
-								write(1, buff_read, r);
-								printf("<-- (%d char)\n", r);
-								fflush(stdout);
-								print("   ==> communication ignorée\n");}
+								printf("Player joue en x=%d y=%d\n", x, y);}
+
+							ret_play=play(part, x,y,joueur_courant);
+
+							if(aff_debug){
+								printf("Gestpart répond %d\n", ret_play);
+								fflush(stdout);}
+
+							switch(ret_play)
+							{
+								case -1 :
+									//erreur de jeu
+									//[buf permet d'envoyer T joueur score map, donc M map ...]
+									aff_map=getmap(part);
+									sprintf(buff, "M %s", aff_map);
+									free(aff_map);
+									if(aff_debug){print("Envoi de 'M map' au joueur courant\n");}
+									write(tab_stream[joueur_courant], buff, strlen(buff)+1);
+									
+									if(aff_debug){
+										print("-->");
+										write(1, buff, strlen(buff)+1);
+										printf("<-- (%d char)\n", strlen(buff)+1);fflush(stdout);}
+									
+									//on laisse cont_waiting=true -> on attend toujours le même joueur
+									break;
+								case 0 :
+									if(aff_debug){print("Victoire d'un joueur\n");}
+									cont_waiting=false;
+									stop=true;
+									break;
+								default :
+									if(aff_debug){print("Coup correct\n");}
+
+									joueur_precedent=joueur_courant;
+									joueur_courant=ret_play;
+									if(tab_stream[joueur_courant]==-1)
+									{
+										if(aff_debug)
+											{printf("boucle de recherche de joueur ...\n");fflush(stdout);}
+										do
+										{
+											joueur_courant=joueur_suivant(part, joueur_courant);
+										}
+										while(tab_stream[joueur_courant]==-1 && joueur_courant!=joueur_precedent);
+										if(aff_debug)
+											{printf("fin boucle de recherche de joueur !!!\n");fflush(stdout);}
+
+										if(joueur_courant==joueur_precedent)
+										{
+											//le prochain joueur qui peut jouer est celui qui vient de déco
+											print("Erreur : plus de joueurs connectés");
+											stop=true;
+										}
+									}
+									if(aff_debug){
+									printf("Au joueur [%s - %d] de jouer !\n", tab_pseudo[joueur_courant],
+															tab_stream[joueur_courant]);}
+									cont_waiting=false;
+									break;
+							}
 						}
+					}		
+				}
+		
+				for(i=0; i<tab_stream.size(); ++i)
+				{
+					//on n'écoute pas le joueur courant
+					if((int) i!=joueur_ecoute && FD_ISSET(tab_stream[i], &readfs))
+					{
+						fflush(stdout);
+						if(aff_debug)
+						{printf("ecoute stream [%d] ...\n", tab_stream[i]);fflush(stdout);}
+						r=read(tab_stream[i], buff_read, 50);
+						if(r<=0)
+						{
+							printf("Erreur : client déconnecté (%d)\n", tab_stream[i]);
+							tab_stream[i]=-1;
+						}
+							if(aff_debug){
+							printf("   ERREUR : socket %d a parlé -->", tab_stream[i]);
+							write(1, buff_read, r);
+							printf("<-- (%d char)\n", r);
+							fflush(stdout);
+							print("   ==> communication ignorée\n");}
 					}
 				}
 			}
