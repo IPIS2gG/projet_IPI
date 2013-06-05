@@ -513,7 +513,7 @@ void attendre_et_dechiffrer_message (struct main* m, char commande_attendue)
       verifier_socket (m, taille_mot, mot);
 
       m->mess.winner = atoi(mot);
-      if (m->mess.winner < 1 || m->mess.joueur_dont_cest_le_tour > 9)
+      if (m->mess.winner < 1 || m->mess.winner > 9)
       {
         m->mess.commande = '\0';
         m->mess.description_commande = concat_string_gfree(concat_string_gfree(concat_string_gfree(m->mess.description_commande, "numero de joueur à updater ("), mot), ") non-valide.");
