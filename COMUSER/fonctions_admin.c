@@ -166,6 +166,8 @@ void* attendre_reception_demandes_joueurs (void* arg)
         m->open_sdl = true;
         gdk_threads_enter();
         gtk_main_quit();
+        gtk_widget_hide (m->fenetre_accept_joueur.adresse);
+        m->fenetre_accept_joueur.open = 0;
         gdk_threads_leave();
         g_thread_exit(NULL);
         break;

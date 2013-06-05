@@ -231,8 +231,10 @@ void traitement_jeu (struct main* m)
 //Thread de vérification de clic sur la croix.
 void* attente_fermeture (void* arg)
 {
-  attendre_clic_croix_ou_changement_etat((bool*) arg, g_thread_exit);
+  attendre_fermeture_sdl_ou_changement_etat((bool*) arg, g_thread_exit);
+  printf("Clic croix SDL détecté.\n");
   arret_sdl();
+  exit(-1);
 
   return arg;
 }

@@ -39,6 +39,8 @@ void attendre_clic_croix();
 void attendre_clic_croix_ou_bouton_valider();
 //  ...pour quitter la fonction, et exécution de f si executer passe à true.
 void attendre_clic_croix_ou_changement_etat (short* executer, void (*f) (void*));
+//  ...pour fermer le programme, et exécution de f si executer passe à true.
+void attendre_fermeture_sdl_ou_changement_etat (short* executer, void (*f) (void*));
 
 //Arrêt propre de la SDL
 void arret_sdl();

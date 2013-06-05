@@ -280,8 +280,8 @@ void signal_create_game(GtkWidget* widget, gpointer data)
 	{	gtk_label_set_text(GTK_LABEL(label_err), "Le nombre de joueurs doit être >=2"); return ;}
 	if(nbj>9)
 	{	gtk_label_set_text(GTK_LABEL(label_err), "Le nombre de joueurs doit être <=9"); return ;}
-	if(nbc < 10 * nbj)
-	{	gtk_label_set_text(GTK_LABEL(label_err), "Le nombre de coups doit être >= 10 * nb de joueurs"); return ;}
+	if(nbc < nbj)
+	{	gtk_label_set_text(GTK_LABEL(label_err), "Le nombre de coups doit être >= nb de joueurs"); return ;}
 
 	printf("Création de la partie : %dx%d , %d joueurs max\n", w, h, nbj);
 

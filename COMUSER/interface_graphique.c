@@ -1546,7 +1546,7 @@ void attendre_clic_croix_ou_bouton_valider()
 
 
 
-//Fonction d'attente de clic sur la croix. Si fermer_thread passe à true, la fonction g_thread_exit est exécutée.
+//Fonction d'attente de clic sur la croix pour sortir de la fonction. Si fermer_thread passe à true, la fonction g_thread_exit est exécutée.
 void attendre_clic_croix_ou_changement_etat(bool* fermer_thread, void (*g_thread_exit)(void*))
 {
   if (!initialise)
@@ -1565,6 +1565,35 @@ void attendre_clic_croix_ou_changement_etat(bool* fermer_thread, void (*g_thread
     {
       case SDL_QUIT:
         continuer = false;
+      default:
+        if (*fermer_thread) g_thread_exit(NULL);
+    }
+  }
+}
+
+
+
+
+//Fonction d'attente de clic sur la croix pour fermer le programme et quitter. Si fermer_thread passe à true, la fonction g_thread_exit est exécutée.
+void attendre_fermeture_sdl_ou_changement_etat(bool* fermer_thread, void (*g_thread_exit)(void*))
+{
+  if (!initialise)
+  {
+    fprintf(stderr, "Lancement de attendre_clic_croix sans initialisation.\n");
+    return;
+  }
+
+  bool continuer = true;
+  SDL_Event event;
+
+  while (continuer)
+  {
+    SDL_WaitEvent(&event);
+    switch(event.type)
+    {
+      case SDL_QUIT:
+        arret_sdl();
+        exit (-1);
       default:
         if (*fermer_thread) g_thread_exit(NULL);
     }
